@@ -55,7 +55,7 @@ canvas#game { width: 100%; height: 100%; display: block; image-rendering: pixela
 .pbtn { font-family: var(--f-pixel); font-size: 8px; text-decoration: none; background: #1d1524; color: var(--bone); border: 2px solid var(--bone); padding: 8px 10px; cursor: pointer; box-shadow: 2px 2px 0 #000; }
 .pbtn:hover { background: var(--blood); }
 .pbtn.primary { border-color: var(--pink); color: var(--pink); }
-.pbtn:focus-visible { outline: 2px dashed var(--cyan); outline-offset: 2px; }
+.pbtn:focus-visible, .pbtn.sel { outline: 2px dashed var(--cyan); outline-offset: 2px; background: #2a1b33; }
 
 .controls { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 14px; padding-inline: 6px; }
 .dpad { position: relative; width: 120px; height: 120px; }
@@ -648,17 +648,17 @@ const TAPE = sprite(["wwwwwwww","wkkkkkkw","wkooookw","wkkkkkkw","wwwwwwww"], { 
 // =============== STORE MAP ===============
 const MAP = [
 "WWWWWWWWWWWWWWWWWWWW",
-"WKKKKKKTTTNNNNNNNNNW",
-"WCCCCCC............W",
+"WKKKKKTaaaNbbbNcccNW",
+"WCCCCC.............W",
 "W..................W",
-"W.aaa..bbb..ccc....W",
+"W..ddd...eee...fff.W",
 "W..................W",
-"W.ddd..eee..fff..P.W",
+"W.................PW",
+"W..ggg...hhh...iii.W",
 "W..................W",
-"W.ggg..hhh..iii....W",
 "W..................W",
-"W.jjj..kkk..lll..B.W",
-"W..................W",
+"W..jjj...kkk...lll.W",
+"W.................BW",
 "W.....~..........mmW",
 "WWWWWWWWWDDWWWWWWWWW"];
 const tileAt = (x, y) => (y < 0 || y >= ROWS || x < 0 || x >= COLS) ? "W" : MAP[y][x];
@@ -705,11 +705,11 @@ const [BG, bg] = makeCanvas(W, H);
     if (ch === "~") { bg.fillStyle = "#1f2a3a"; bg.fillRect(X + 3, Y + 5, 10, 7); bg.fillStyle = "#2c3d55"; bg.fillRect(X + 5, Y + 6, 5, 2); }
   }
   // posters on back wall
-  const posters = [[16, "#7a1f2a", "#e9e1d2"], [17, "#1f3a7a", "#f2d13a"], [18, "#3a2a1f", "#c8202c"]];
-  posters.forEach(([x, a, b]) => { bg.fillStyle = a; bg.fillRect(x * T + 2, 2, 12, 11); bg.fillStyle = b; bg.fillRect(x * T + 4, 4, 8, 3); bg.fillRect(x * T + 4, 9, 5, 2); bg.fillStyle = "#e9e1d2"; bg.fillRect(x * T + 7, 1, 2, 1); });
+  const posters = [[2, "#7a1f2a", "#e9e1d2"], [4, "#1f3a7a", "#f2d13a"], [6, "#3a2a1f", "#c8202c"]]; const PY = 13 * T + 3;
+  posters.forEach(([x, a, b]) => { bg.fillStyle = a; bg.fillRect(x * T + 2, PY, 12, 11); bg.fillStyle = b; bg.fillRect(x * T + 4, PY + 2, 8, 3); bg.fillRect(x * T + 4, PY + 7, 5, 2); bg.fillStyle = "#e9e1d2"; bg.fillRect(x * T + 7, PY - 1, 2, 1); });
   // torn "BE KIND REWIND" strip
-  bg.fillStyle = "#e9e1d2"; bg.fillRect(4 * T, 3, 5 * T, 7); bg.fillStyle = "#c8202c"; for (let i = 0; i < 9; i++) bg.fillRect(4 * T + 3 + i * 8, 5, 5, 3);
-  bg.fillStyle = "#2b3a33"; bg.fillRect(4 * T + 30, 3, 3, 4);
+  bg.fillStyle = "#e9e1d2"; bg.fillRect(1 * T + 2, 3, 3 * T - 4, 7); bg.fillStyle = "#c8202c"; for (let i = 0; i < 5; i++) bg.fillRect(1 * T + 5 + i * 8, 5, 5, 3);
+  bg.fillStyle = "#2b3a33"; bg.fillRect(1 * T + 22, 3, 3, 4);
   // register on counter
   bg.fillStyle = "#4a4a52"; bg.fillRect(4 * T + 3, 2 * T - 10, 10, 8); bg.fillStyle = "#38e0ff"; bg.fillRect(4 * T + 5, 2 * T - 8, 6, 2); bg.fillStyle = "#2a2a30"; bg.fillRect(4 * T + 4, 2 * T - 4, 8, 2);
   // return slot sign
@@ -857,10 +857,10 @@ function updateIntro() {
   intro.t++; const it = intro.t;
   if (Math.random() < .004 && intro.lightning <= 0) { intro.lightning = 1; intro.flash = 1; sfx.thunder(); }
   if (intro.flash > 0) intro.flash -= .08; if (intro.lightning > 0) intro.lightning -= .02;
-  if (intro.phase === 0) { intro.px += .55; if (intro.px >= 208 || takePress("a")) { intro.px = 208; intro.phase = 1; intro.t = 0; } }
-  else if (intro.phase === 1) { if (it > 20) { intro.phase = 2; intro.t = 0; sfx.door(); } }
-  else if (intro.phase === 2) { intro.doorOpen = Math.min(1, it / 25); if (it > 40) { intro.phase = 3; intro.t = 0; } }
-  else if (intro.phase === 3) { if (it > 10) startFade(() => { state.scene = "loading"; intro.t = 0; }); }
+  if (intro.phase === 0) { intro.px += .95; if (intro.px >= 208 || takePress("a")) { intro.px = 208; intro.phase = 1; intro.t = 0; } }
+  else if (intro.phase === 1) { if (it > 8) { intro.phase = 2; intro.t = 0; sfx.door(); } }
+  else if (intro.phase === 2) { intro.doorOpen = Math.min(1, it / 16); if (it > 24) { intro.phase = 3; intro.t = 0; } }
+  else if (intro.phase === 3) { if (it > 4) startFade(() => { state.scene = "loading"; intro.t = 0; }); }
   takePress("a"); takePress("b");
 }
 function drawLoading() {
@@ -872,15 +872,15 @@ function drawLoading() {
   text("NOW LOADING", 116, 165, "#e9e1d2"); const dots = ".".repeat(Math.floor(t / 15) % 4); text(dots, 204, 165, "#ff4fd8");
   text("PLEASE BE KIND. REWIND.", 68, 190, "#4b4658");
   // tracking bar
-  px(60, 210, 200, 6, "#1a1520"); px(60, 210, Math.min(200, t * 2.4), 6, "#38e0ff");
-  if (t > 90) startFade(() => { state.scene = "store"; player.x = 9; player.y = 11; player.px = 9 * T; player.py = 11 * T; player.dir = "up"; showToast("Welcome in. Watch the puddle."); });
+  px(60, 210, 200, 6, "#1a1520"); px(60, 210, Math.min(200, t * 4), 6, "#38e0ff");
+  if (t > 52) startFade(() => { state.scene = "store"; player.x = 9; player.y = 11; player.px = 9 * T; player.py = 11 * T; player.dir = "up"; showToast("Welcome in. Watch the puddle."); });
   intro.t++;
 }
 
 // =============== STORE SCENE ===============
 function startFade(cb) { if (fadeDir !== 0) return; fadeDir = 1; onFadeDone = cb; }
-function updateFade() { if (fadeDir === 1) { fade = Math.min(1, fade + .07); if (fade >= 1) { fadeDir = -1; if (onFadeDone) { const f = onFadeDone; onFadeDone = null; f(); } } }
-  else if (fadeDir === -1) { fade = Math.max(0, fade - .05); if (fade <= 0) fadeDir = 0; } }
+function updateFade() { if (fadeDir === 1) { fade = Math.min(1, fade + .1); if (fade >= 1) { fadeDir = -1; if (onFadeDone) { const f = onFadeDone; onFadeDone = null; f(); } } }
+  else if (fadeDir === -1) { fade = Math.max(0, fade - .07); if (fade <= 0) fadeDir = 0; } }
 const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 function blocked(x, y) { if (!walkable(tileAt(x, y))) return true; if (cat.x === x && cat.y === y) return true; return false; }
 function updatePlayer() {
@@ -912,6 +912,7 @@ function interact() {
   if (f.ch === "B") { sfx.blip(); say({ text: "A trash can full of rewound-wrong tapes and one sock." }); return; }
   if (f.ch === "N") { sfx.blip(); say({ text: rnd(["NEW RELEASES. Every tape on this wall is from 1988.", "A rack of returns nobody has reshelved. One of them is still warm.", "Staff picks. The staff is one guy and the cat."]) }); return; }
   if (f.ch === "K") { sfx.blip(); say({ text: "The clerk raises an eyebrow. 'Counter's right here, pal.'" }); return; }
+  if (f.ch === "W" && f.y === ROWS - 1) { sfx.blip(); say({ text: rnd(["The HORROR sign buzzes like it has something to say.", "Posters for movies that never came out. One has your face on it.", "A poster: NOW HIRING. NIGHTS ONLY. MUST LIKE CATS."]) }); return; }
   if (f.ch === "W" && f.y === 0) { sfx.blip(); say({ text: rnd(["A poster for a movie that may not exist: SLEEP TIGHT 3.", "BE KIND. REWIND. Someone has crossed out KIND.", "A wall of staff picks. Every pick is the same movie."]) }); return; }
   if (f.ch === "D") { sfx.blip(); onDoor(true); return; }
 }
@@ -930,7 +931,9 @@ function filmLine(f) { return `${f.title} (${f.year})  ${f.rating.toFixed(1)}/10
 function counter() {
   choiceOfDay = rnd(FILMS);
   if (!bag.length) {
-    say({ text: `The clerk looks up from a magazine.\n"Nothing? Tonight's Choice of the Day is...\n${filmLine(choiceOfDay)}.\nWant it?"`, choices: ["Take it", "Keep browsing"], onChoice: i => { if (i === 0) { sfx.reveal(); finish(choiceOfDay, "choice"); } } });
+    say([{ text: `The clerk looks up from a magazine.\n"Empty-handed? Fine. Skip the shelves, I'll pick for you."` },
+      { text: `He reaches under the counter.\n"Tonight's Choice of the Day is...\n${filmLine(choiceOfDay)}."`, onShow: () => sfx.reveal() },
+      { text: `"Take it, or go browse. It re-rolls every time you come back."`, choices: ["Take it", "Go browse"], onChoice: i => { if (i === 0) finish(choiceOfDay, "choice"); } }]);
     return;
   }
   const pages = [{ text: `The clerk dumps your bag on the counter.\n"Let's see what you've got."` }];
@@ -960,9 +963,9 @@ function drawStore() {
   ctx.drawImage(BG, 0, 0);
   // neon inside sign on back wall
   ctx.font = '8px "Press Start 2P", monospace'; ctx.textBaseline = "top";
-  if (flicker.neon > .35) { ctx.shadowColor = "#c8202c"; ctx.shadowBlur = 6; ctx.fillStyle = "#ffb3b8"; ctx.fillText("HORROR", 12 * T + 2, 4); ctx.shadowBlur = 0; ctx.fillStyle = "#ff3b47"; ctx.fillText("HORROR", 12 * T + 2, 4); } else { ctx.fillStyle = "#3a1012"; ctx.fillText("HORROR", 12 * T + 2, 4); }
+  if (flicker.neon > .35) { ctx.shadowColor = "#c8202c"; ctx.shadowBlur = 6; ctx.fillStyle = "#ffb3b8"; ctx.fillText("HORROR", 13 * T + 2, 13 * T + 5); ctx.shadowBlur = 0; ctx.fillStyle = "#ff3b47"; ctx.fillText("HORROR", 13 * T + 2, 13 * T + 5); } else { ctx.fillStyle = "#3a1012"; ctx.fillText("HORROR", 13 * T + 2, 13 * T + 5); }
   // TV static
-  [[7 * T, 1 * T], [8 * T, 1 * T], [9 * T, 1 * T]].forEach(([x, y], i) => { px(x + 1, y + 1, 14, 14, "#2a2a30"); px(x + 2, y + 2, 12, 9, "#111"); for (let j = 0; j < 30; j++) { const v = Math.random(); px(x + 2 + Math.random() * 12, y + 2 + Math.random() * 9, 1, 1, v > .5 ? "#cfcfd8" : "#5a5a66"); } if (i === 0 && Math.floor(state.t / 40) % 9 === 0) { px(x + 6, y + 4, 2, 2, "#c8202c"); px(x + 9, y + 4, 2, 2, "#c8202c"); } px(x + 3, y + 12, 10, 2, "#1a1a20"); });
+  [[6 * T, 1 * T]].forEach(([x, y], i) => { px(x + 1, y + 1, 14, 14, "#2a2a30"); px(x + 2, y + 2, 12, 9, "#111"); for (let j = 0; j < 30; j++) { const v = Math.random(); px(x + 2 + Math.random() * 12, y + 2 + Math.random() * 9, 1, 1, v > .5 ? "#cfcfd8" : "#5a5a66"); } if (i === 0 && Math.floor(state.t / 40) % 9 === 0) { px(x + 6, y + 4, 2, 2, "#c8202c"); px(x + 9, y + 4, 2, 2, "#c8202c"); } px(x + 3, y + 12, 10, 2, "#1a1a20"); });
   // y-sorted entities
   const ents = [];
   for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) { const ch = MAP[y][x]; const sh = shelfByCh[ch];
@@ -1036,14 +1039,23 @@ function showResult(f, how) {
       <a class="pbtn" href="https://www.justwatch.com/us/search?q=${encodeURIComponent(f.title)}" target="_blank" rel="noopener">Where to stream</a>
       <button class="pbtn" type="button" id="againBtn">Back to the shelves [A]</button>
     </div>
-    <div class="label" style="color:#9a93a3">Due back by dawn. Rewind it.</div>
+    <div class="label" style="color:#9a93a3">Due back by dawn. Rewind it. &nbsp;&larr; &rarr; pick, A select, B back</div>
   </div>`;
   resultEl.hidden = false;
   document.getElementById("againBtn").addEventListener("click", hideResult);
-  document.getElementById("againBtn").focus();
+  resultSel = 2; markResult();
 }
+let resultSel = 2;
+function resultBtns() { return [...resultEl.querySelectorAll(".pbtn")]; }
+function markResult() { resultBtns().forEach((b, i) => b.classList.toggle("sel", i === resultSel)); }
 function hideResult() { resultEl.hidden = true; state.scene = "store"; showToast("Choice of the Day re-rolled."); }
-function updateResult() { if (takePress("a") || takePress("b")) hideResult(); }
+function updateResult() {
+  const btns = resultBtns(); if (!btns.length) return;
+  if (takePress("left") || takePress("up")) { resultSel = (resultSel + btns.length - 1) % btns.length; sfx.blip(); markResult(); }
+  if (takePress("right") || takePress("down")) { resultSel = (resultSel + 1) % btns.length; sfx.blip(); markResult(); }
+  if (takePress("a")) { const b = btns[resultSel]; if (b.id === "againBtn") hideResult(); else { sfx.blip(); b.click(); } }
+  if (takePress("b")) hideResult();
+}
 function updateBagLine() { document.getElementById("bagLine").textContent = bag.length ? `BAG: ${bag.map(b => b.shelf.name.split(" ")[0]).join(", ")}` : "BAG: empty"; }
 
 // =============== LOOP ===============
