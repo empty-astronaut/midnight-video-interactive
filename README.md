@@ -1,8 +1,10 @@
-# Midnight Video
+# Midnight Video Interactive
 
 A tiny 16-bit video store you walk around at night. Browse twelve horror shelves, grab tapes blind, and take them to the counter. The clerk decides which one you keep, unless you gamble on the Choice of the Day.
 
-**Live site:** `https://empty-astronaut.github.io/midnight-video/`
+**Live site:** `https://empty-astronaut.github.io/midnight-video-interactive/`
+
+The original one-page picker (filters and a Scare Me button, no walking) is still at [midnight-video](https://empty-astronaut.github.io/midnight-video/). The sunny, non-horror version of this game is [Daytime Video Interactive](https://empty-astronaut.github.io/daytime-video-interactive/).
 
 ## How to play
 
@@ -86,5 +88,3 @@ To add a shelf, add an entry to the `SHELVES` array (a letter, a name, a short s
 ## Credits
 
 Everything is drawn in code: the sprites, the shelves, the rain, the sign. Sound effects are generated in the browser with the Web Audio API, so there are no audio files. Film details are not affiliated with or sourced live from IMDb or JustWatch, which are linked for convenience only.
-
-The old filter-and-roll version of this site lives on as [Daytime Video](https://empty-astronaut.github.io/daytime-video/) for everything that isn't horror.
