@@ -1,0 +1,1076 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Midnight Video</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<style>
+/* Layout: a chunky late-80s handheld sitting on a dark table. Screen on top, D-pad and buttons below. Single committed dark look. */
+:root {
+  --table: #0b0a0e;
+  --shell: #2a2733;
+  --shell-dark: #171520;
+  --shell-light: #3b3748;
+  --bezel: #0a0a0c;
+  --bone: #e9e1d2;
+  --bone-dim: #9a93a3;
+  --blood: #c8202c;
+  --pink: #ff4fd8;
+  --cyan: #38e0ff;
+  --f-pixel: "Press Start 2P", "Courier New", monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--table); color: var(--bone); height: 100%; }
+body { margin: 0; font-family: var(--f-pixel); padding-inline: 16px; padding-block: 12px 24px; overflow-x: hidden;
+  background: radial-gradient(ellipse at 50% 0%, #1a1522 0%, var(--table) 60%); }
+.wrap { max-width: 720px; margin: 0 auto; display: grid; gap: 10px; justify-items: center; }
+.topline { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 640px; font-size: 9px; color: var(--bone-dim); letter-spacing: .05em; flex-wrap: wrap; gap: 6px; }
+.topline b { color: var(--pink); font-weight: 400; text-shadow: 0 0 6px var(--pink); }
+.shell { width: 100%; max-width: 640px; background: linear-gradient(180deg, var(--shell-light), var(--shell) 30%, var(--shell-dark)); border-radius: 18px 18px 48px 18px;
+  padding: 18px 18px 22px; box-shadow: 0 30px 60px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.08), inset 0 -3px 0 rgba(0,0,0,.5); display: grid; gap: 14px; }
+.screen-bezel { background: var(--bezel); border-radius: 10px 10px 28px 10px; padding: 14px 14px 18px; box-shadow: inset 0 2px 8px rgba(0,0,0,.9); position: relative; }
+.screen-bezel::after { content: "MIDNIGHT VIDEO \2022 RENTAL SYSTEM"; position: absolute; left: 20px; bottom: 4px; font-size: 7px; color: #4b4658; letter-spacing: .1em; }
+.screen { position: relative; width: 100%; aspect-ratio: 4 / 3; background: #000; overflow: hidden; border-radius: 3px; }
+canvas#game { width: 100%; height: 100%; display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+.scanlines { position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(180deg, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.18) 2px 3px); mix-blend-mode: multiply; }
+.glass { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,.07), transparent 50%); }
+
+.result { position: absolute; inset: 0; background: rgba(6,4,10,.92); display: grid; place-items: center; padding: 10px; overflow: auto; }
+.result[hidden] { display: none; }
+.card { width: 100%; max-width: 540px; border: 3px solid var(--bone); background: #120d16; padding: 14px; display: grid; gap: 10px; box-shadow: 0 0 0 3px #000, 0 0 24px rgba(255,79,216,.25); }
+.card .label { font-size: 8px; color: var(--cyan); letter-spacing: .1em; }
+.card h2 { font-size: clamp(12px, 3.2vw, 20px); margin: 0; line-height: 1.4; color: var(--bone); text-shadow: 2px 2px 0 var(--blood); }
+.card .meta { font-size: 8px; color: var(--bone-dim); line-height: 1.9; }
+.card .meta b { color: var(--bone); font-weight: 400; }
+.card .skulls { color: var(--blood); font-family: system-ui, sans-serif; font-size: 16px; letter-spacing: 3px; }
+.card p { font-family: Georgia, "Times New Roman", serif; font-size: 15px; line-height: 1.45; margin: 0; color: var(--bone); font-style: italic; }
+.card .tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.card .tag { font-size: 7px; border: 2px solid #3a2f44; padding: 3px 5px; color: var(--bone-dim); }
+.card .acts { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 6px; border-top: 2px dashed #3a2f44; }
+.pbtn { font-family: var(--f-pixel); font-size: 8px; text-decoration: none; background: #1d1524; color: var(--bone); border: 2px solid var(--bone); padding: 8px 10px; cursor: pointer; box-shadow: 2px 2px 0 #000; }
+.pbtn:hover { background: var(--blood); }
+.pbtn.primary { border-color: var(--pink); color: var(--pink); }
+.pbtn:focus-visible { outline: 2px dashed var(--cyan); outline-offset: 2px; }
+
+.controls { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 14px; padding-inline: 6px; }
+.dpad { position: relative; width: 120px; height: 120px; }
+.dpad button { position: absolute; width: 40px; height: 40px; background: linear-gradient(180deg, #17141d, #0d0b11); border: 2px solid #000; color: #6d6680; font-size: 12px; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; box-shadow: inset 0 1px 0 rgba(255,255,255,.1); }
+.dpad button:active, .dpad button.down { background: #26202e; color: var(--cyan); }
+.dpad .u { left: 40px; top: 0; border-radius: 6px 6px 0 0; } .dpad .d { left: 40px; top: 80px; border-radius: 0 0 6px 6px; }
+.dpad .l { left: 0; top: 40px; border-radius: 6px 0 0 6px; } .dpad .r { left: 80px; top: 40px; border-radius: 0 6px 6px 0; }
+.dpad .c { left: 40px; top: 40px; background: #0d0b11; pointer-events: none; }
+.ab { display: flex; gap: 14px; align-items: flex-end; transform: rotate(-12deg); }
+.ab button { width: 58px; height: 58px; border-radius: 50%; border: 2px solid #000; font-family: var(--f-pixel); font-size: 12px; cursor: pointer; color: #fff; touch-action: none; user-select: none; -webkit-user-select: none;
+  box-shadow: 0 4px 0 #000, inset 0 2px 0 rgba(255,255,255,.2); }
+.ab .a { background: radial-gradient(circle at 35% 30%, #ff6f7a, var(--blood) 60%, #6e0c14); }
+.ab .b { background: radial-gradient(circle at 35% 30%, #8b7fe8, #4b3f9e 60%, #241c52); margin-bottom: 16px; }
+.ab button:active, .ab button.down { transform: translateY(3px); box-shadow: 0 1px 0 #000; }
+.ab small { display: block; font-size: 7px; color: var(--bone-dim); text-align: center; margin-top: 8px; }
+.help { font-size: 8px; color: var(--bone-dim); line-height: 1.9; text-align: center; max-width: 640px; }
+.help kbd { color: var(--bone); border: 1px solid #3a2f44; padding: 1px 4px; font-family: inherit; }
+.dpad button:focus-visible, .ab button:focus-visible { outline: 2px dashed var(--cyan); outline-offset: 2px; }
+@media (max-width: 480px) { .shell { padding: 12px 10px 16px; border-radius: 12px 12px 36px 12px; } .screen-bezel { padding: 8px 8px 12px; } .controls { gap: 8px; } .dpad { width: 108px; height: 108px; } .dpad button { width: 36px; height: 36px; } .dpad .u,.dpad .d,.dpad .c{left:36px} .dpad .d{top:72px} .dpad .l,.dpad .r,.dpad .c{top:36px} .dpad .r{left:72px} .ab button { width: 50px; height: 50px; } }
+@media (prefers-reduced-motion: reduce) { .scanlines { display: none; } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <div class="topline"><span><b>MIDNIGHT VIDEO</b> &nbsp;open till dawn</span><span id="bagLine">BAG: empty</span></div>
+  <div class="shell">
+    <div class="screen-bezel">
+      <div class="screen">
+        <canvas id="game" width="320" height="240" aria-label="Midnight Video game screen"></canvas>
+        <div class="scanlines" aria-hidden="true"></div>
+        <div class="glass" aria-hidden="true"></div>
+        <div class="result" id="result" hidden></div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="dpad" aria-label="Direction pad">
+        <button class="u" data-k="up" aria-label="Up">&#9650;</button>
+        <button class="l" data-k="left" aria-label="Left">&#9664;</button>
+        <button class="c" tabindex="-1" aria-hidden="true"></button>
+        <button class="r" data-k="right" aria-label="Right">&#9654;</button>
+        <button class="d" data-k="down" aria-label="Down">&#9660;</button>
+      </div>
+      <div class="ab">
+        <div><button class="b" data-k="b" aria-label="B button">B</button><small>CANCEL</small></div>
+        <div><button class="a" data-k="a" aria-label="A button">A</button><small>ACTION</small></div>
+      </div>
+    </div>
+  </div>
+  <div class="help">Move: <kbd>arrows</kbd> or <kbd>WASD</kbd> &nbsp; Action: <kbd>Z</kbd> <kbd>Enter</kbd> <kbd>Space</kbd> &nbsp; Cancel: <kbd>X</kbd> <kbd>Esc</kbd> &nbsp; Sound: <kbd>M</kbd><br>Browse 12 shelves, carry up to 5 tapes, bring them to the counter. The clerk decides which one you keep... or take the Choice of the Day.</div>
+</div>
+
+<script>
+(() => {
+"use strict";
+// =============== DATA ===============
+const G = { slasher:"Slasher", supernatural:"Supernatural", possession:"Possession", haunted:"Haunted House", folk:"Folk Horror", witch:"Witches & Occult",
+  body:"Body Horror", creature:"Creature Feature", zombie:"Zombie", vampire:"Vampire", psych:"Psychological", scifi:"Sci-Fi Horror", cosmic:"Cosmic Dread",
+  found:"Found Footage", invasion:"Home Invasion", survival:"Survival", comedy:"Horror Comedy" };
+const RAW = `The Exorcist|1973|8.1|122|possession,supernatural|William Friedkin|A mother turns to two priests when something takes hold of her twelve-year-old daughter.
+Halloween|1978|7.7|91|slasher|John Carpenter|Fifteen years after his first kill, Michael Myers comes home for the holiday.
+The Thing|1982|8.2|109|scifi,creature,body|John Carpenter|An Antarctic research crew learns the thing that thawed out can look like any of them.
+Alien|1979|8.5|117|scifi,creature|Ridley Scott|A towing ship answers a distress call and brings something back aboard.
+The Shining|1980|8.4|146|psych,haunted|Stanley Kubrick|A winter caretaker, his family, and a hotel that wants him to stay forever.
+Hereditary|2018|7.3|127|supernatural,witch,possession|Ari Aster|After a grandmother's death, her family starts inheriting more than grief.
+Midsommar|2019|7.1|148|folk,psych|Ari Aster|A grieving couple visits a Swedish midsummer festival that happens only once every ninety years.
+The Witch|2015|6.9|92|folk,witch|Robert Eggers|A banished Puritan family on the edge of the woods, and something living in them.
+Get Out|2017|7.8|104|psych|Jordan Peele|Meeting the girlfriend's parents goes wrong in ways no one could have guessed.
+Us|2019|6.8|116|psych,invasion|Jordan Peele|A beach-house vacation is interrupted by a family that looks exactly like them.
+Nope|2022|6.8|130|scifi,creature|Jordan Peele|Horse-ranch siblings try to film the thing hiding in the clouds above their valley.
+It Follows|2014|6.8|100|supernatural|David Robert Mitchell|After one encounter, something starts walking toward her. Slowly. Always.
+The Babadook|2014|6.8|94|psych,supernatural|Jennifer Kent|A widowed mother reads her son a pop-up book that should never have been opened.
+A Quiet Place|2018|7.5|90|creature,survival|John Krasinski|A family survives in silence, because the things outside hunt by sound.
+The Conjuring|2013|7.5|112|haunted,possession|James Wan|Paranormal investigators Ed and Lorraine Warren take on a Rhode Island farmhouse.
+The Conjuring 2|2016|7.3|134|haunted,possession|James Wan|The Warrens travel to London to help a family in Enfield.
+Insidious|2010|6.8|103|haunted,supernatural|James Wan|It isn't the house that's haunted. It's their son.
+Sinister|2012|6.8|110|supernatural,found|Scott Derrickson|A true-crime writer finds a box of home movies in his new attic.
+The Black Phone|2021|6.9|103|supernatural|Scott Derrickson|An abducted boy gets calls on a disconnected phone from the killer's earlier victims.
+The Ring|2002|7.1|115|supernatural|Gore Verbinski|Watch the tape, and seven days later the phone rings.
+Ringu|1998|7.2|96|supernatural|Hideo Nakata|A reporter investigates a cursed videotape linked to four deaths.
+Ju-On: The Grudge|2002|6.6|92|haunted,supernatural|Takashi Shimizu|A curse born of rage spreads to everyone who enters one Tokyo house.
+Pulse|2001|6.6|119|supernatural,psych|Kiyoshi Kurosawa|Ghosts reach the living through the internet, and loneliness spreads like a virus.
+Audition|1999|7.1|115|psych,body|Takashi Miike|A widower holds a fake casting call to find a new wife. Kiri kiri kiri.
+The Blair Witch Project|1999|6.5|81|found,witch|Daniel Myrick, Eduardo Sánchez|Three student filmmakers go into the Maryland woods. Their footage came back.
+Paranormal Activity|2007|6.3|86|found,haunted|Oren Peli|A couple sets up a camera to record what happens while they sleep.
+[REC]|2007|7.4|78|found,zombie|Jaume Balagueró, Paco Plaza|A TV crew follows firefighters into a quarantined Barcelona apartment building.
+Cloverfield|2008|7.0|85|found,creature|Matt Reeves|A going-away party in Manhattan, interrupted by something enormous.
+Lake Mungo|2008|6.9|87|found,supernatural|Joel Anderson|After their daughter drowns, an Australian family starts finding her in their photos.
+Host|2020|6.5|57|found,supernatural|Rob Savage|Six friends hold a séance over a video call during lockdown.
+Late Night with the Devil|2023|7.0|93|found,possession|Cameron & Colin Cairnes|A 1977 talk-show host chases ratings with a live possession special on Halloween.
+Noroi: The Curse|2005|7.0|115|found,folk|Kōji Shiraishi|A paranormal journalist's final documentary traces a demon called Kagutaba.
+Incantation|2022|6.2|110|found,folk|Kevin Ko|A mother broke a religious taboo six years ago. Now she needs your help.
+Creep|2014|6.2|77|found,psych|Patrick Brice|A videographer answers a Craigslist ad for a one-day job in a remote cabin.
+Grave Encounters|2011|6.0|92|found,haunted|The Vicious Brothers|A ghost-hunting reality show locks itself inside an abandoned asylum overnight.
+V/H/S|2012|5.8|116|found|Various|Burglars searching a house find a stack of tapes they should not watch.
+Night of the Living Dead|1968|7.8|96|zombie,survival|George A. Romero|Strangers board up a Pennsylvania farmhouse as the dead rise outside.
+Dawn of the Dead|1978|7.9|127|zombie,survival|George A. Romero|Four survivors hole up in a shopping mall as society collapses.
+Dawn of the Dead|2004|7.3|101|zombie,survival|Zack Snyder|A nurse and a handful of strangers hold out in a Wisconsin mall against running dead.
+28 Days Later|2002|7.5|113|zombie,survival|Danny Boyle|A man wakes from a coma into an empty London. It isn't empty.
+28 Years Later|2025|6.7|115|zombie,survival|Danny Boyle|Decades after the outbreak, a boy leaves his island community for the infected mainland.
+Train to Busan|2016|7.6|118|zombie,survival|Yeon Sang-ho|A father and daughter board a bullet train just as an outbreak hits South Korea.
+Shaun of the Dead|2004|7.9|99|zombie,comedy|Edgar Wright|A slacker's plan: grab Mum, get Liz, go to the Winchester, wait for this to blow over.
+Pontypool|2008|6.6|93|zombie,psych|Bruce McDonald|A small-town radio station learns the infection spreads through language.
+The Evil Dead|1981|7.4|85|possession,supernatural|Sam Raimi|Five friends, one cabin, one tape recorder reading from the Book of the Dead.
+Evil Dead II|1987|7.7|84|possession,comedy|Sam Raimi|Ash returns to the cabin and the cabin is not done with him. Groovy.
+Evil Dead Rise|2023|6.5|96|possession|Lee Cronin|The Deadites move into a Los Angeles apartment building.
+Scream|1996|7.4|111|slasher,comedy|Wes Craven|A masked killer who knows all the rules of horror movies stalks a small town.
+Scream|2022|6.3|114|slasher|Matt Bettinelli-Olpin, Tyler Gillett|Twenty-five years later, a new Ghostface returns to Woodsboro.
+A Nightmare on Elm Street|1984|7.4|91|slasher,supernatural|Wes Craven|Whatever you do, don't fall asleep.
+The Texas Chain Saw Massacre|1974|7.4|83|slasher,survival|Tobe Hooper|Five friends on a Texas road trip stop at the wrong farmhouse.
+Friday the 13th|1980|6.4|95|slasher|Sean S. Cunningham|Camp counselors reopen Camp Crystal Lake despite its bloody history.
+Black Christmas|1974|7.1|98|slasher|Bob Clark|A sorority house gets obscene phone calls over the holidays. The calls are coming from inside the house.
+Halloween|2018|6.5|106|slasher|David Gordon Green|Laurie Strode has waited forty years for Michael to come back.
+Child's Play|1988|6.6|87|slasher,supernatural|Tom Holland|A dying serial killer transfers his soul into a Good Guy doll.
+Terrifier|2016|5.6|85|slasher|Damien Leone|Art the Clown spends a Halloween night tormenting two young women.
+X|2022|6.6|105|slasher|Ti West|A 1979 film crew rents a Texas farmhouse from an elderly couple to shoot an adult movie.
+Pearl|2022|7.0|102|slasher,psych|Ti West|In 1918, a farm girl with dreams of stardom snaps.
+The House of the Devil|2009|6.4|95|witch|Ti West|A college student takes a strange babysitting job on the night of a lunar eclipse.
+Happy Death Day|2017|6.6|96|slasher,comedy|Christopher Landon|A college student relives the day of her murder until she finds the killer.
+Freaky|2020|6.3|102|slasher,comedy|Christopher Landon|A teenager swaps bodies with a serial killer.
+High Tension|2003|6.7|91|slasher|Alexandre Aja|Two friends at a remote farmhouse, and a killer who arrives in the night.
+Psycho|1960|8.5|109|psych,slasher|Alfred Hitchcock|A woman on the run checks into the Bates Motel.
+The Birds|1963|7.6|119|creature|Alfred Hitchcock|The birds of Bodega Bay begin attacking people for no reason at all.
+Rosemary's Baby|1968|8.0|137|witch,psych|Roman Polanski|A pregnant woman suspects her charming elderly neighbors want her baby.
+The Omen|1976|7.5|111|supernatural|Richard Donner|An American diplomat slowly realizes his adopted son is the Antichrist.
+Suspiria|1977|7.3|98|witch,supernatural|Dario Argento|An American dancer arrives at a German ballet academy run by a coven.
+Suspiria|2018|6.7|152|witch|Luca Guadagnino|A reimagining set in divided 1977 Berlin.
+The Wicker Man|1973|7.5|88|folk|Robin Hardy|A devout police sergeant investigates a missing girl on a pagan Scottish island.
+Jaws|1975|8.1|124|creature,survival|Steven Spielberg|You're gonna need a bigger boat.
+An American Werewolf in London|1981|7.5|97|creature,comedy|John Landis|Two backpackers on the Yorkshire moors should have stayed on the road.
+Ginger Snaps|2000|6.8|108|creature,body|John Fawcett|A death-obsessed teen is bitten by something on the night of her first period.
+The Fly|1986|7.6|96|body,scifi|David Cronenberg|A scientist's teleportation experiment goes wrong in one tiny, buzzing way.
+Videodrome|1983|7.2|87|body,scifi|David Cronenberg|A cable TV boss finds a broadcast that changes the people who watch it.
+The Brood|1979|6.8|92|body,psych|David Cronenberg|A psychotherapist's experimental technique gives rage a physical form.
+Hellraiser|1987|6.9|94|body,supernatural|Clive Barker|A puzzle box opens the door to the Cenobites. They have such sights to show you.
+Re-Animator|1985|7.1|104|body,comedy|Stuart Gordon|A medical student brings back the dead with a glowing green serum.
+The Substance|2024|7.3|141|body|Coralie Fargeat|A fading star tries a black-market drug that creates a younger, better version of her.
+Raw|2016|7.0|99|body|Julia Ducournau|A vegetarian veterinary student develops a hunger for meat after a hazing ritual.
+Titane|2021|6.5|108|body|Julia Ducournau|A woman with a titanium plate in her head goes on the run after a string of crimes.
+Possession|1981|7.3|124|psych,body|Andrzej Żuławski|A spy's marriage disintegrates in Berlin, and his wife is hiding something in an apartment.
+Martyrs|2008|7.0|99|psych,body|Pascal Laugier|A survivor of childhood abuse seeks revenge, and finds something much worse.
+Possessor|2020|6.5|103|scifi,body|Brandon Cronenberg|An assassin uses brain implants to inhabit other people's bodies.
+Eyes Without a Face|1960|7.7|90|body|Georges Franju|A surgeon kidnaps young women to restore his daughter's face.
+The Descent|2005|7.2|99|creature,survival|Neil Marshall|Six friends go caving in the Appalachians and find they aren't alone.
+Event Horizon|1997|6.8|96|scifi,cosmic|Paul W.S. Anderson|A rescue crew boards a lost ship that came back from somewhere else.
+In the Mouth of Madness|1994|7.1|95|cosmic,psych|John Carpenter|An insurance investigator searches for a horror novelist whose books drive readers insane.
+Prince of Darkness|1987|6.7|102|cosmic,possession|John Carpenter|Grad students study a canister of swirling green liquid in a church basement.
+The Fog|1980|6.8|89|supernatural|John Carpenter|A coastal town's centennial brings in a glowing fog, and something in it.
+The Mist|2007|7.1|126|creature,cosmic|Frank Darabont|Townspeople trapped in a supermarket as a mist full of creatures rolls in.
+The Void|2016|5.8|90|cosmic,body|Steven Kostanski, Jeremy Gillespie|Hooded cultists surround a near-empty hospital as something grows inside.
+Annihilation|2018|6.8|115|scifi,cosmic|Alex Garland|A biologist enters the Shimmer, a zone where nature is mutating.
+Color Out of Space|2019|6.2|111|cosmic,body|Richard Stanley|A meteorite lands on an alpaca farm and turns everything a color no one can name.
+The Lighthouse|2019|7.4|109|psych,cosmic|Robert Eggers|Two lighthouse keepers on a remote island slowly lose their minds.
+The Endless|2017|6.5|111|cosmic|Justin Benson, Aaron Moorhead|Two brothers return to the UFO death cult they escaped a decade ago.
+Let the Right One In|2008|7.8|114|vampire|Tomas Alfredson|A bullied boy in 1980s Sweden befriends the strange girl next door.
+Nosferatu|1922|7.8|94|vampire|F.W. Murnau|Count Orlok buys a house in Wisborg, and brings the plague with him.
+Nosferatu|2024|7.2|132|vampire,supernatural|Robert Eggers|A young woman haunted by an ancient vampire who becomes obsessed with her.
+Dracula|1931|7.4|75|vampire|Tod Browning|Bela Lugosi as the Count. "I never drink... wine."
+Interview with the Vampire|1994|7.6|123|vampire|Neil Jordan|A two-hundred-year-old vampire tells his story to a reporter in San Francisco.
+30 Days of Night|2007|6.6|113|vampire,survival|David Slade|A month of darkness in Barrow, Alaska, and a pack of vampires waiting for it.
+What We Do in the Shadows|2014|7.7|86|vampire,comedy|Jemaine Clement, Taika Waititi|A documentary crew follows vampire flatmates in Wellington.
+A Girl Walks Home Alone at Night|2014|7.0|101|vampire|Ana Lily Amirpour|A skateboarding vampire stalks the streets of an Iranian ghost town.
+Near Dark|1987|7.0|94|vampire|Kathryn Bigelow|A farm boy falls in with a nomadic family of vampires.
+Fright Night|1985|7.0|106|vampire,comedy|Tom Holland|A teen is sure his new neighbor is a vampire. Nobody believes him.
+The Lost Boys|1987|7.2|97|vampire,comedy|Joel Schumacher|Two brothers move to Santa Carla, the murder capital of the world.
+Sinners|2025|7.6|137|vampire,supernatural|Ryan Coogler|Twin brothers open a juke joint in 1932 Mississippi, and evil comes to the door.
+Tucker and Dale vs. Evil|2010|7.5|89|comedy,slasher|Eli Craig|Two kind hillbillies are mistaken for killers by panicking college kids.
+The Cabin in the Woods|2011|7.0|95|comedy,slasher|Drew Goddard|Five friends go to a remote cabin. You think you know the story.
+Ready or Not|2019|6.8|95|comedy,survival|Matt Bettinelli-Olpin, Tyler Gillett|A bride's wedding night becomes a deadly game of hide-and-seek with her in-laws.
+Barbarian|2022|7.0|102|creature,psych|Zach Cregger|A woman's Airbnb in Detroit is double-booked. That's the least of it.
+Weapons|2025|7.5|128|supernatural,witch|Zach Cregger|Seventeen kids from the same class vanish at 2:17 AM. One stays behind.
+Talk to Me|2022|7.1|95|possession|Danny & Michael Philippou|Teens get high on contact with spirits through an embalmed hand.
+Smile|2022|6.5|115|supernatural|Parker Finn|A psychiatrist witnesses a patient's death and starts seeing smiling people everywhere.
+Longlegs|2024|6.6|101|witch,psych|Osgood Perkins|An FBI agent tracks a serial killer who leaves coded letters at family murder scenes.
+You're Next|2011|6.5|95|invasion,slasher|Adam Wingard|Masked attackers pick the wrong family reunion.
+The Strangers|2008|6.2|86|invasion|Bryan Bertino|"Is Tamara home?"
+Hush|2016|6.6|82|invasion|Mike Flanagan|A deaf writer in the woods fights off a masked killer.
+Funny Games|1997|7.5|108|invasion,psych|Michael Haneke|Two polite young men in white gloves visit a family's lake house.
+Inside|2007|6.8|83|invasion,slasher|Alexandre Bustillo, Julien Maury|A grieving, pregnant woman is besieged on Christmas Eve.
+Don't Breathe|2016|7.1|88|invasion,survival|Fede Álvarez|Burglars break into a blind veteran's house. Bad idea.
+Gerald's Game|2017|6.6|103|psych,survival|Mike Flanagan|A woman is left handcuffed to a bed in a remote house after her husband dies.
+Oculus|2013|6.4|104|supernatural|Mike Flanagan|Siblings try to prove an antique mirror killed their parents.
+Doctor Sleep|2019|7.3|152|supernatural|Mike Flanagan|Grown-up Danny Torrance protects a girl with the shine from a cult that feeds on it.
+The Others|2001|7.6|101|haunted|Alejandro Amenábar|A mother and her light-sensitive children wait out the war in a dark island mansion.
+The Orphanage|2007|7.4|105|haunted|J.A. Bayona|A woman reopens the orphanage where she grew up, and her son makes new friends.
+The Devil's Backbone|2001|7.4|106|haunted|Guillermo del Toro|An unexploded bomb and a ghost in a Spanish Civil War orphanage.
+Crimson Peak|2015|6.5|119|haunted|Guillermo del Toro|A young author marries into a crumbling English mansion that bleeds red clay.
+The Haunting|1963|7.4|112|haunted,psych|Robert Wise|An anthropologist brings psychic subjects to Hill House.
+The Innocents|1961|7.7|100|haunted,psych|Jack Clayton|A governess believes her two young charges are possessed by the dead.
+Poltergeist|1982|7.3|114|haunted|Tobe Hooper|"They're here."
+The Changeling|1980|7.1|107|haunted|Peter Medak|A grieving composer rents a mansion where a child's ghost wants to be heard.
+House|1977|7.3|88|haunted,comedy|Nobuhiko Obayashi|Seven schoolgirls visit an aunt whose house eats people. Truly unhinged.
+His House|2020|6.5|93|haunted,psych|Remi Weekes|Refugees from South Sudan are placed in an English house with something evil inside.
+Session 9|2001|6.4|100|psych,haunted|Brad Anderson|An asbestos crew takes a job cleaning a derelict mental hospital.
+Candyman|1992|6.7|99|supernatural,slasher|Bernard Rose|A grad student studying urban legends says his name five times.
+Pet Sematary|1989|6.6|103|supernatural|Mary Lambert|Sometimes dead is better.
+Carrie|1976|7.4|98|supernatural,psych|Brian De Palma|A bullied teen with telekinetic powers goes to the prom.
+Misery|1990|7.8|107|psych,survival|Rob Reiner|A novelist is rescued after a car crash by his number one fan.
+The Silence of the Lambs|1991|8.6|118|psych|Jonathan Demme|An FBI trainee seeks help from an imprisoned cannibal psychiatrist.
+Jacob's Ladder|1990|7.5|113|psych|Adrian Lyne|A Vietnam veteran's grip on reality fractures in New York.
+Invasion of the Body Snatchers|1978|7.4|115|scifi|Philip Kaufman|San Franciscans are replaced, one by one, while they sleep.
+Tremors|1990|7.1|96|creature,comedy|Ron Underwood|Two handymen in Perfection, Nevada, discover giant worms underground.
+Gremlins|1984|7.3|106|creature,comedy|Joe Dante|Three rules. Everyone breaks all of them.
+The Host|2006|7.1|120|creature|Bong Joon-ho|A monster rises from the Han River and takes a girl. Her family goes after it.
+The Wailing|2016|7.4|156|possession,folk|Na Hong-jin|A bumbling cop investigates a sickness spreading through his mountain village.
+A Tale of Two Sisters|2003|7.1|115|psych,haunted|Kim Jee-woon|Two sisters return home from a mental hospital to their stepmother.
+Onibaba|1964|7.8|103|folk|Kaneto Shindo|Two women in war-torn Japan survive by killing samurai, until a demon mask appears.
+The Autopsy of Jane Doe|2016|6.8|86|supernatural|André Øvredal|Father-and-son coroners examine an unidentified body that keeps getting stranger.
+Green Room|2015|7.0|95|survival|Jeremy Saulnier|A punk band witnesses a murder at a neo-Nazi bar and can't leave.
+The Ritual|2017|6.3|94|folk,creature|David Bruckner|Four friends take a shortcut through a Swedish forest.
+The Night House|2020|6.5|107|supernatural,psych|David Bruckner|A widow finds disturbing secrets in the lake house her husband built.
+Apostle|2018|6.3|130|folk|Gareth Evans|A man infiltrates an island cult to rescue his kidnapped sister in 1905.
+Kill List|2011|6.3|95|folk,psych|Ben Wheatley|Two hitmen accept a job that takes them somewhere very dark.
+Lamb|2021|6.3|106|folk|Valdimar Jóhannsson|An Icelandic farming couple raise a newborn that is not entirely a lamb.
+Saint Maud|2019|6.6|84|psych|Rose Glass|A pious hospice nurse becomes obsessed with saving her patient's soul.
+Relic|2020|6.0|89|psych,haunted|Natalie Erika James|A daughter and granddaughter return to a family home after Grandma goes missing.
+Mandy|2018|6.5|121|witch,psych|Panos Cosmatos|A lumberjack hunts the cult that took the woman he loves. Cheddar goblin.
+Speak No Evil|2022|6.6|97|psych|Christian Tafdrup|A Danish family visits a Dutch family they met on vacation. They should leave.
+The Invisible Man|2020|7.1|124|scifi,psych|Leigh Whannell|She escaped her abusive ex. Then he died. Then he didn't leave.
+Saw|2004|7.6|103|psych,survival|James Wan|Two men wake up chained in a filthy bathroom. Let's play a game.
+Cube|1997|7.2|90|scifi,survival|Vincenzo Natali|Strangers wake up in a maze of booby-trapped cube rooms.
+Final Destination|2000|6.7|98|supernatural,survival|James Wong|Death doesn't like being cheated, and it comes back for the survivors.
+Final Destination Bloodlines|2025|6.7|110|supernatural,survival|Zach Lipovsky, Adam Stein|A college student inherits her grandmother's premonition, and death's debt.
+The Exorcist III|1990|6.3|110|possession,psych|William Peter Blatty|A detective connects a string of murders to an executed serial killer.
+The Exorcism of Emily Rose|2005|6.7|119|possession|Scott Derrickson|A priest stands trial for the death of a college student he tried to exorcise.
+Frankenstein|1931|7.8|70|creature|James Whale|It's alive.
+Bride of Frankenstein|1935|7.8|75|creature,comedy|James Whale|The monster wants a mate, and Dr. Pretorius is happy to help.
+Creature from the Black Lagoon|1954|7.0|79|creature|Jack Arnold|An Amazon expedition finds a living fossil that doesn't want to be found.
+Carnival of Souls|1962|7.0|78|supernatural|Herk Harvey|After a car accident, a church organist is drawn to an abandoned pavilion.
+Don't Look Now|1973|7.1|110|psych,supernatural|Nicolas Roeg|Grieving parents in Venice glimpse a small figure in a red coat.
+Phantasm|1979|6.6|88|supernatural,scifi|Don Coscarelli|A boy is sure the Tall Man at the funeral home is up to something.
+Malignant|2021|6.2|111|supernatural,slasher|James Wan|A woman sees murders in visions, as they happen. Commit to the third act.
+M3GAN|2022|6.3|102|scifi,comedy|Gerard Johnstone|A roboticist builds a doll to protect her orphaned niece. It takes the job seriously.
+Fresh|2022|6.4|117|psych,comedy|Mimi Cave|A woman meets a charming surgeon at the grocery store. He has particular tastes.
+Bodies Bodies Bodies|2022|6.1|95|comedy,slasher|Halina Reijn|Rich twenty-somethings play a murder game during a hurricane party.
+The Menu|2022|7.2|107|comedy,psych|Mark Mylod|A couple travels to an island for a dinner prepared by a celebrity chef.
+It|2017|7.3|135|supernatural|Andy Muschietti|The Losers' Club faces the shape-shifting clown under Derry.
+Trick 'r Treat|2007|6.7|82|supernatural,comedy|Michael Dougherty|Four Halloween stories, one small figure in a burlap mask watching the rules.
+The Hills Have Eyes|1977|6.3|89|survival|Wes Craven|A family's car breaks down in the Nevada desert, near a clan of cannibals.
+Wolf Creek|2005|6.3|99|survival,slasher|Greg McLean|Backpackers in the Australian outback accept help from a friendly local.
+Eden Lake|2008|6.7|91|survival|James Watkins|A couple's lakeside weekend turns into a hunt by local teenagers.
+Crawl|2019|6.1|87|creature,survival|Alexandre Aja|A hurricane, a flooding crawl space, and alligators.
+The Shallows|2016|6.3|86|creature,survival|Jaume Collet-Serra|A surfer stranded on a rock two hundred yards from shore. A shark circles.
+Fall|2022|6.4|107|survival|Scott Mann|Two climbers stranded at the top of a 2,000-foot radio tower.
+Cabin Fever|2002|5.6|93|body,comedy|Eli Roth|Five college grads rent a cabin and catch a flesh-eating virus.
+Hostel|2005|5.9|94|survival|Eli Roth|Backpackers in Slovakia are sold to a club for wealthy sadists.
+The Devil's Rejects|2005|6.8|107|slasher,survival|Rob Zombie|The Firefly family goes on the run from a vengeful sheriff.
+House of 1000 Corpses|2003|6.0|89|slasher|Rob Zombie|Two couples looking for roadside oddities find the Firefly house.
+Drag Me to Hell|2009|6.6|99|supernatural,comedy|Sam Raimi|A loan officer denies an old woman an extension and gets cursed for it.
+The Mummy|1932|7.0|73|supernatural|Karl Freund|An ancient priest revived by archaeologists seeks his reincarnated love.
+The Wolf Man|1941|7.2|70|creature|George Waggner|Even a man who is pure in heart and says his prayers by night.
+Cat People|1942|7.2|73|psych,creature|Jacques Tourneur|A Serbian woman fears she will turn into a panther if aroused.
+I Walked with a Zombie|1943|7.0|69|zombie,folk|Jacques Tourneur|A nurse on a Caribbean island tends a wife who walks but does not wake.
+The Invisible Man|1933|7.6|71|scifi|James Whale|A scientist's invisibility formula drives him to madness and murder.
+The Curse of Frankenstein|1957|7.0|82|creature|Terence Fisher|Hammer's blood-colored take on the Baron and his creation.
+Horror of Dracula|1958|7.2|82|vampire|Terence Fisher|Jonathan Harker arrives at Castle Dracula as a vampire hunter in disguise.
+Village of the Damned|1960|7.2|77|scifi,psych|Wolf Rilla|Every woman in an English village gives birth on the same day. The children have glowing eyes.
+Black Sunday|1960|7.1|87|witch,supernatural|Mario Bava|A witch executed by an iron mask returns two centuries later.
+Black Sabbath|1963|7.0|92|supernatural|Mario Bava|Three tales of terror hosted by Boris Karloff.
+Blood and Black Lace|1964|7.0|88|slasher|Mario Bava|A masked killer stalks models at a Roman fashion house.
+Kwaidan|1964|7.9|183|folk,supernatural|Masaki Kobayashi|Four Japanese ghost stories painted in color.
+Repulsion|1965|7.6|105|psych|Roman Polanski|A young woman left alone in a London flat comes apart.
+The Tenant|1976|7.6|126|psych|Roman Polanski|A man rents an apartment whose previous tenant jumped from the window.
+Hour of the Wolf|1968|7.5|90|psych,supernatural|Ingmar Bergman|A painter on a remote island is visited by figures from his nightmares.
+Witchfinder General|1968|6.8|86|witch,folk|Michael Reeves|Vincent Price as Matthew Hopkins, torturing England for witches.
+Blood on Satan's Claw|1971|6.3|97|folk,witch|Piers Haggard|A plowed-up skull drives the youth of a 17th-century village into a cult.
+Daughters of Darkness|1971|6.6|87|vampire|Harry Kümel|Honeymooners at an empty Belgian hotel meet a countess who never ages.
+Let's Scare Jessica to Death|1971|6.3|89|psych,vampire|John D. Hancock|A woman just out of a psychiatric hospital moves to a farmhouse where a girl lives in the lake.
+The Abominable Dr. Phibes|1971|7.1|94|slasher,comedy|Robert Fuest|A disfigured organist kills the surgeons he blames for his wife's death, one plague at a time.
+Theatre of Blood|1973|7.1|104|slasher,comedy|Douglas Hickox|A Shakespearean actor murders his critics with scenes from the plays.
+The Legend of Hell House|1973|6.7|95|haunted|John Hough|A physicist and two mediums spend a week in the Mount Everest of haunted houses.
+Deathdream|1974|6.7|88|zombie,psych|Bob Clark|A soldier killed in Vietnam comes home anyway.
+It's Alive|1974|5.8|91|creature|Larry Cohen|A newborn with claws and fangs escapes the delivery room.
+Deep Red|1975|7.5|127|slasher,psych|Dario Argento|A jazz pianist witnesses a murder and becomes the killer's next target.
+Tenebrae|1982|7.0|101|slasher|Dario Argento|An American crime writer in Rome is stalked by a killer copying his book.
+Phenomena|1985|6.6|116|supernatural,slasher|Dario Argento|A girl who communicates with insects hunts a killer in Switzerland.
+Opera|1987|6.9|107|slasher|Dario Argento|A soprano is forced to watch murders with needles taped under her eyes.
+The Beyond|1981|6.8|87|supernatural,zombie|Lucio Fulci|A Louisiana hotel sits on one of the seven gateways to Hell.
+Zombie|1979|6.8|91|zombie|Lucio Fulci|A zombie fights a shark. There's more, but that's the pitch.
+City of the Living Dead|1980|6.1|93|zombie,supernatural|Lucio Fulci|A priest's suicide opens the gates of Hell in Dunwich.
+Who Can Kill a Child?|1976|7.0|107|survival,psych|Narciso Ibáñez Serrador|A couple visits a Spanish island where the children have killed all the adults.
+The Sentinel|1977|6.5|92|supernatural,haunted|Michael Winner|A model rents a Brooklyn brownstone next to a blind priest who guards a gateway.
+Eraserhead|1977|7.3|89|psych,body|David Lynch|A man in an industrial wasteland cares for a monstrous newborn.
+Martin|1977|6.9|95|vampire,psych|George A. Romero|A young man in Pittsburgh believes he is an 84-year-old vampire.
+Day of the Dead|1985|7.1|96|zombie|George A. Romero|Scientists and soldiers in an underground bunker, outnumbered 400,000 to one.
+Creepshow|1982|6.8|120|supernatural,comedy|George A. Romero|Five EC-comics tales written by Stephen King.
+Alice, Sweet Alice|1976|6.5|98|slasher,psych|Alfred Sole|A girl's First Communion ends in murder, and her sister is the suspect.
+Magic|1978|6.8|107|psych|Richard Attenborough|A ventriloquist's dummy starts giving the orders.
+Piranha|1978|5.9|94|creature,comedy|Joe Dante|Genetically engineered piranha are released into a summer camp's river.
+Long Weekend|1978|6.5|92|creature,folk|Colin Eggleston|A bickering couple camp on an Australian beach and nature turns on them.
+Patrick|1978|6.1|112|supernatural|Richard Franklin|A comatose patient with psychokinetic powers fixates on his nurse.
+Dracula|1979|6.4|109|vampire|John Badham|Frank Langella's seductive Count arrives in Whitby.
+Nosferatu the Vampyre|1979|7.4|107|vampire|Werner Herzog|Klaus Kinski as the plague-bringing Count, with real rats.
+Salem's Lot|1979|6.8|184|vampire|Tobe Hooper|A writer returns to his Maine hometown as a vampire moves into the Marsten House.
+Tourist Trap|1979|6.0|90|slasher,supernatural|David Schmoeller|Stranded travelers at a roadside museum of mannequins that move.
+Maniac|1980|6.4|87|slasher,psych|William Lustig|A scalp-collecting killer prowls New York.
+Prom Night|1980|5.5|92|slasher|Paul Lynch|Six years after a child's death, the kids responsible are stalked at prom.
+Terror Train|1980|6.0|97|slasher|Roger Spottiswoode|A costume party aboard a train, and a killer changing disguises with each victim.
+Altered States|1980|6.9|102|scifi,body|Ken Russell|A scientist's sensory-deprivation experiments regress him through evolution.
+Inferno|1980|6.5|107|witch,supernatural|Dario Argento|The second of the Three Mothers, in a New York apartment building.
+Dressed to Kill|1980|7.1|105|slasher,psych|Brian De Palma|A razor-wielding killer in an elevator, and the witness who saw too much.
+The Burning|1981|6.5|91|slasher|Tony Maylam|A burned caretaker returns to summer camp with garden shears.
+My Bloody Valentine|1981|6.1|90|slasher|George Mihalchuk|A mining town revives its Valentine's dance and a pickaxe killer returns.
+The Entity|1982|6.7|125|supernatural,haunted|Sidney J. Furie|A woman is attacked by something invisible, and parapsychologists try to trap it.
+Basket Case|1982|6.1|91|body,comedy|Frank Henenlotter|A young man checks into a Times Square hotel with his deformed twin in a wicker basket.
+Christine|1983|6.8|110|supernatural|John Carpenter|A 1958 Plymouth Fury with a jealous streak.
+Cujo|1983|6.1|93|creature,survival|Lewis Teague|A mother and son trapped in a Pinto by a rabid Saint Bernard.
+Sleepaway Camp|1983|6.2|84|slasher|Robert Hiltzik|Campers die around a shy girl. The ending is infamous.
+The Dead Zone|1983|7.2|103|psych,supernatural|David Cronenberg|A man wakes from a coma able to see the future by touch.
+Scanners|1981|6.7|103|scifi,body|David Cronenberg|Telepaths who can make heads explode. One does.
+The Hunger|1983|6.6|97|vampire|Tony Scott|Catherine Deneuve and David Bowie as ageless vampires in New York.
+Children of the Corn|1984|5.7|92|folk|Fritz Kiersch|A couple stranded in Nebraska finds a town run by children who worship He Who Walks Behind the Rows.
+The Company of Wolves|1984|6.7|95|creature,folk|Neil Jordan|Little Red Riding Hood retold as a dream of werewolves.
+Silver Bullet|1985|6.4|95|creature|Daniel Attias|A boy in a wheelchair knows the killer in his town is a werewolf.
+The Return of the Living Dead|1985|7.3|91|zombie,comedy|Dan O'Bannon|A gas leak at a medical supply warehouse. Braaains.
+Lifeforce|1985|6.1|116|vampire,scifi|Tobe Hooper|Space vampires drain London. Naked ones.
+Demons|1985|6.7|88|possession,creature|Lamberto Bava|A free movie screening in Berlin turns the audience into demons.
+Aliens|1986|8.4|137|scifi,creature|James Cameron|Ripley goes back. This time it's war.
+From Beyond|1986|6.6|85|body,cosmic|Stuart Gordon|A resonator stimulates the pineal gland and lets you see what lives between dimensions.
+Night of the Creeps|1986|6.8|88|zombie,comedy|Fred Dekker|Alien slugs turn a college campus into zombies on the night of the formal.
+Henry: Portrait of a Serial Killer|1986|7.0|83|psych|John McNaughton|A drifter and his roommate murder their way through Chicago.
+Chopping Mall|1986|5.7|77|scifi,comedy|Jim Wynorski|Security robots at a mall malfunction and hunt teens locked inside overnight.
+Hellbound: Hellraiser II|1988|6.4|97|body,supernatural|Tony Randel|Kirsty follows her father into the labyrinth of the Cenobites.
+The Stepfather|1987|6.5|89|psych|Joseph Ruben|A man who murders families when they fail to be perfect starts over again.
+A Nightmare on Elm Street 3: Dream Warriors|1987|6.6|96|slasher,supernatural|Chuck Russell|The last Elm Street kids learn to fight Freddy inside their dreams.
+Angel Heart|1987|7.2|113|psych,supernatural|Alan Parker|A 1955 private eye hired by Louis Cyphre to find a missing singer.
+Street Trash|1987|6.1|91|body,comedy|J. Michael Muro|A case of bad liquor melts the homeless of Brooklyn.
+Bad Taste|1987|6.4|91|creature,comedy|Peter Jackson|Aliens harvest a New Zealand town for intergalactic fast food.
+Dead Alive|1992|7.4|104|zombie,comedy|Peter Jackson|A Sumatran rat-monkey bites Mum. The lawnmower scene follows.
+Monkey Shines|1988|6.2|113|creature,psych|George A. Romero|A quadriplegic's helper monkey begins acting on his anger.
+Pumpkinhead|1988|6.2|86|creature,folk|Stan Winston|A grieving father summons a backwoods demon for revenge.
+The Blob|1988|6.6|95|creature,scifi|Chuck Russell|A meteorite's gelatinous passenger eats a small town.
+The Serpent and the Rainbow|1988|6.4|98|folk,zombie|Wes Craven|An anthropologist goes to Haiti to find the drug that makes zombies.
+They Live|1988|7.2|94|scifi|John Carpenter|A pair of sunglasses reveals the aliens running everything. Chew bubblegum.
+Society|1989|6.5|99|body,comedy|Brian Yuzna|A Beverly Hills teen suspects his family belongs to something that isn't human.
+Tetsuo: The Iron Man|1989|6.9|67|body,scifi|Shinya Tsukamoto|A salaryman's body sprouts metal after a hit-and-run.
+Santa Sangre|1989|7.5|123|psych|Alejandro Jodorowsky|A circus boy becomes the arms of his armless mother.
+Arachnophobia|1990|6.5|109|creature,comedy|Frank Marshall|A deadly Venezuelan spider breeds in a California barn.
+Nightbreed|1990|6.5|102|creature|Clive Barker|A troubled young man finds the monster city of Midian beneath a cemetery.
+The People Under the Stairs|1991|6.4|102|invasion,comedy|Wes Craven|A boy breaks into his landlords' house and finds what they keep in the walls.
+Braindead|1992|7.4|104|zombie,comedy|Peter Jackson|The goriest film ever made, and one of the funniest.
+Army of Darkness|1992|7.4|81|comedy,supernatural|Sam Raimi|Ash in 1300 AD with a chainsaw hand and a boomstick.
+Bram Stoker's Dracula|1992|7.4|128|vampire|Francis Ford Coppola|Gary Oldman's Count crosses oceans of time for Winona Ryder.
+Cronos|1993|6.7|94|vampire,body|Guillermo del Toro|An antique dealer finds a golden scarab device that gives eternal life at a price.
+Dellamorte Dellamore|1994|7.1|105|zombie,comedy|Michele Soavi|A cemetery caretaker in Italy shoots the dead when they return a week later.
+Wes Craven's New Nightmare|1994|6.5|112|slasher,supernatural|Wes Craven|Freddy crosses into the real world to haunt Heather Langenkamp.
+Species|1995|5.8|108|scifi,creature|Roger Donaldson|A human-alien hybrid escapes a lab and searches Los Angeles for a mate.
+From Dusk till Dawn|1996|7.2|108|vampire,comedy|Robert Rodriguez|Bank robbers cross into Mexico and stop at the Titty Twister.
+The Frighteners|1996|6.9|110|supernatural,comedy|Peter Jackson|A con-man psychic who really sees ghosts meets a Reaper who kills by numbers.
+Mimic|1997|6.0|105|creature,scifi|Guillermo del Toro|Engineered insects evolve to mimic their prey. Us.
+I Know What You Did Last Summer|1997|5.8|101|slasher|Jim Gillespie|Four friends hit a man with their car. A year later, the hook arrives.
+Perfect Blue|1997|8.0|81|psych|Satoshi Kon|A pop idol turned actress is stalked, and her sense of self dissolves.
+The Faculty|1998|6.5|104|scifi,comedy|Robert Rodriguez|High schoolers discover their teachers have been taken over by parasites.
+Sleepy Hollow|1999|7.3|105|supernatural,slasher|Tim Burton|Ichabod Crane investigates the Headless Horseman.
+Stir of Echoes|1999|6.9|99|supernatural|David Koepp|A hypnotized man starts seeing a dead girl in his Chicago home.
+The Sixth Sense|1999|8.2|107|supernatural,psych|M. Night Shyamalan|A child psychologist and a boy who sees dead people.
+Ravenous|1999|7.0|101|survival,comedy|Antonia Bird|A remote 1840s Army fort and a stranger with a story about the Wendigo.
+Final Destination 2|2003|6.2|90|supernatural,survival|David R. Ellis|The log truck. You know the one.
+American Psycho|2000|7.6|102|psych,slasher|Mary Harron|A Wall Street banker's murders, or maybe just his business cards.
+Battle Royale|2000|7.6|114|survival|Kinji Fukasaku|A class of Japanese students is forced to fight to the death on an island.
+Frailty|2001|7.2|100|psych,supernatural|Bill Paxton|A father tells his sons God has ordered him to destroy demons who look like people.
+Jeepers Creepers|2001|6.2|90|creature|Victor Salva|Siblings on a road trip see a figure dump a body down a pipe.
+Dagon|2001|6.2|98|cosmic,creature|Stuart Gordon|A shipwrecked couple reaches a Spanish fishing village that worships something in the sea.
+Dark Water|2002|6.6|101|haunted,supernatural|Hideo Nakata|A divorced mother and daughter move into an apartment with a leaking ceiling.
+May|2002|6.7|93|psych,slasher|Lucky McKee|A lonely veterinary assistant decides to build a friend out of her favorite parts.
+Bubba Ho-Tep|2002|7.0|92|comedy,supernatural|Don Coscarelli|Elvis and a Black JFK fight a mummy in a Texas nursing home.
+The Eye|2002|6.6|99|supernatural|Danny Pang, Oxide Pang|A cornea transplant lets a blind woman see the dead.
+Identity|2003|7.3|90|psych,slasher|James Mangold|Ten strangers at a motel in a storm die one by one.
+Dead End|2003|6.6|85|supernatural,psych|Jean-Baptiste Andrea, Fabrice Canepa|A family's Christmas Eve shortcut becomes a road that never ends.
+Dead Birds|2004|5.8|91|haunted,supernatural|Alex Turner|Confederate bank robbers hide out in a plantation house that is very wrong.
+Three... Extremes|2004|7.0|125|body,psych|Fruit Chan, Park Chan-wook, Takashi Miike|Three short films, including dumplings with a secret ingredient.
+Shutter|2004|7.0|97|supernatural|Banjong Pisanthanakun, Parkpoom Wongpoom|A photographer hits a woman with his car. She shows up in his photos.
+The Machinist|2004|7.5|101|psych|Brad Anderson|A factory worker hasn't slept in a year and someone is leaving him notes.
+Land of the Dead|2005|6.2|93|zombie|George A. Romero|The rich live in a tower while the dead learn to think.
+Feast|2005|6.3|95|creature,comedy|John Gulager|Bar patrons under siege by monsters that kill characters in the wrong order.
+Hard Candy|2005|7.0|104|psych|David Slade|A fourteen-year-old meets an older photographer online. She has a plan.
+Slither|2006|6.5|95|creature,comedy|James Gunn|An alien slug hits a South Carolina town. Then the deer.
+Bug|2006|6.1|102|psych|William Friedkin|A lonely woman and a veteran in a motel room, and the bugs only they can see.
+The Hills Have Eyes|2006|6.4|107|survival|Alexandre Aja|A family's trailer breaks down in a nuclear test zone.
+Severance|2006|6.5|96|comedy,survival|Christopher Smith|A corporate team-building weekend in the Hungarian woods goes very badly.
+Fido|2006|6.7|93|zombie,comedy|Andrew Currie|A 1950s town keeps zombies as collared servants. One boy's gets off its leash.
+Them|2006|6.4|77|invasion|David Moreau, Xavier Palud|A couple in a Romanian country house is besieged by hooded figures.
+Frontier(s)|2007|6.2|108|survival|Xavier Gens|Parisian robbers flee to the countryside and into a family of neo-Nazi cannibals.
+Grindhouse: Planet Terror|2007|7.0|105|zombie,comedy|Robert Rodriguez|A go-go dancer with a machine-gun leg versus the infected.
+Teeth|2007|5.5|94|body,comedy|Mitchell Lichtenstein|A chastity advocate discovers her body has its own defense.
+Timecrimes|2007|7.1|92|scifi,psych|Nacho Vigalondo|A man steps into a time machine and sees himself across the field.
+The Signal|2007|6.0|103|psych,scifi|David Bruckner, Dan Bush, Jacob Gentry|A transmission turns everyone in the city homicidal.
+1408|2007|6.8|104|haunted|Mikael Håfström|A debunker of haunted hotels checks into the one room nobody survives an hour in.
+Diary of the Dead|2007|5.6|95|zombie,found|George A. Romero|Film students document the first night of the dead.
+The Children|2008|6.0|84|psych,survival|Tom Shankland|A New Year's family holiday, and the kids start killing.
+Splinter|2008|6.1|82|creature,survival|Toby Wilkins|A parasite that reassembles bodies traps four people in a gas station.
+Deadgirl|2008|5.4|101|zombie,psych|Marcel Sarmiento, Gadi Harel|Two teens find a naked woman chained in an abandoned hospital. She won't die.
+Let Me In|2010|7.1|116|vampire|Matt Reeves|The American remake, set in snowbound Los Alamos.
+The Loved Ones|2009|6.6|84|slasher,psych|Sean Byrne|A boy declines a girl's prom invitation. She throws her own prom.
+Orphan|2009|7.0|123|psych|Jaume Collet-Serra|A couple adopts a nine-year-old Russian girl. Esther is not what she seems.
+Triangle|2009|6.9|99|psych,supernatural|Christopher Smith|A yacht party boards an empty ocean liner and keeps boarding it.
+Antichrist|2009|6.5|108|psych,folk|Lars von Trier|A grieving couple retreats to a cabin called Eden. Chaos reigns.
+Thirst|2009|7.1|134|vampire|Park Chan-wook|A priest volunteers for a medical experiment and comes back thirsty.
+The Last Exorcism|2010|5.6|87|found,possession|Daniel Stamm|A fraud exorcist lets a film crew record his last job.
+I Saw the Devil|2010|7.8|144|psych,slasher|Kim Jee-woon|A secret agent catches his fiancée's killer, lets him go, and catches him again.
+Black Swan|2010|8.0|108|psych,body|Darren Aronofsky|A ballerina unravels while chasing perfection in Swan Lake.
+Rubber|2010|5.8|82|comedy,supernatural|Quentin Dupieux|A tire named Robert rolls through the desert exploding heads. No reason.
+Troll Hunter|2010|7.0|103|found,creature,comedy|André Øvredal|Norwegian students follow a government troll hunter.
+Attack the Block|2011|6.6|88|creature,comedy|Joe Cornish|South London teens defend their tower block from aliens. Allow it.
+The Innkeepers|2011|5.5|101|haunted|Ti West|Two clerks spend the last weekend of a haunted hotel hunting its ghost.
+Absentia|2011|5.8|87|supernatural,creature|Mike Flanagan|A tunnel near a woman's house has been taking people for decades.
+The Woman|2011|6.0|101|psych,survival|Lucky McKee|A lawyer captures a feral woman and chains her in his cellar.
+Berberian Sound Studio|2012|6.1|92|psych|Peter Strickland|A timid British sound engineer scores an Italian giallo and loses himself.
+Excision|2012|6.2|81|psych,body|Richard Bates Jr.|A disturbed teen with surgical dreams tries to win her mother's approval.
+Maniac|2012|6.0|89|slasher,psych|Franck Khalfoun|Elijah Wood as a mannequin restorer with a scalp habit, shot entirely first-person.
+Resolution|2012|6.2|93|cosmic,psych|Justin Benson, Aaron Moorhead|A man chains his addict friend to a pipe in a cabin. Something is watching.
+Here Comes the Devil|2012|5.6|97|possession|Adrián García Bogliano|Two kids disappear on a hill overnight and come back changed.
+Stoker|2013|6.8|99|psych|Park Chan-wook|After her father's death, a girl's uncle moves in. He is not what he seems.
+Evil Dead|2013|6.5|91|possession|Fede Álvarez|Five friends at a cabin, a book bound in skin, a lot of blood.
+Byzantium|2012|6.5|118|vampire|Neil Jordan|A mother and daughter, vampires for two centuries, hide in a seaside town.
+We Are What We Are|2013|5.8|105|folk,psych|Jim Mickle|A family in the Catskills keeps a ritual that requires meat of a specific kind.
+Under the Skin|2013|6.3|108|scifi,psych|Jonathan Glazer|An alien in Scarlett Johansson's skin lures men in Glasgow.
+Starry Eyes|2014|6.0|98|body,witch|Kevin Kölsch, Dennis Widmyer|An aspiring actress gets a role, and it costs exactly what you'd think.
+Housebound|2014|6.8|107|haunted,comedy|Gerard Johnstone|A woman under house arrest at her mum's place starts hearing things.
+The Taking of Deborah Logan|2014|6.0|90|found,possession|Adam Robitel|A documentary on Alzheimer's finds something else in the patient.
+Spring|2014|6.7|109|body,creature|Justin Benson, Aaron Moorhead|An American in Italy falls for a woman who transforms every twenty years.
+Goodnight Mommy|2014|6.7|99|psych|Veronika Franz, Severin Fiala|Twin boys suspect the bandaged woman home from surgery isn't their mother.
+Bone Tomahawk|2015|7.1|132|survival,creature|S. Craig Zahler|A sheriff's posse tracks cannibal troglodytes through the Old West.
+The Invitation|2015|6.6|100|psych|Karyn Kusama|A dinner party with an ex-wife and her new friends. They've found a group.
+We Are Still Here|2015|5.7|84|haunted|Ted Geoghegan|A grieving couple moves to a New England house that needs to be fed every thirty years.
+Baskin|2015|5.7|97|cosmic,possession|Can Evrenol|Turkish cops answer a call at an abandoned building and descend into Hell.
+The Devil's Candy|2015|6.4|79|possession,supernatural|Sean Byrne|A metalhead painter moves his family into a house a killer still visits.
+The Blackcoat's Daughter|2015|5.9|93|possession,psych|Osgood Perkins|Two girls left at a boarding school over winter break. One of them hears a voice.
+Southbound|2015|5.9|89|supernatural,cosmic|Various|Five interlocking stories on a desert highway you cannot leave.
+Under the Shadow|2016|6.8|84|supernatural,haunted|Babak Anvari|A mother and daughter in 1980s Tehran, as missiles fall and a djinn arrives.
+I Am the Pretty Thing That Lives in the House|2016|5.3|89|haunted|Osgood Perkins|A nurse cares for a horror novelist in a house the novelist wrote about.
+Prevenge|2016|5.9|88|slasher,comedy|Alice Lowe|A pregnant woman's unborn baby tells her who to kill.
+The Eyes of My Mother|2016|6.1|76|psych|Nicolas Pesce|A girl raised on a Portuguese farm learns anatomy from her mother. Then uses it.
+Terrified|2017|6.4|87|supernatural,haunted|Demián Rugna|Three houses on one Buenos Aires street, all wrong at once.
+It Comes at Night|2017|6.2|91|psych,survival|Trey Edward Shults|Two families share a boarded-up house as something spreads outside.
+Mother!|2017|6.6|121|psych|Darren Aronofsky|A poet's wife watches guests arrive and never leave.
+Tigers Are Not Afraid|2017|6.7|83|supernatural|Issa López|Orphans of Mexico's drug war are followed by ghosts with chalk lines.
+Revenge|2017|6.4|108|survival|Coralie Fargeat|A woman left for dead in the desert comes back for the three men who did it.
+The Cured|2017|5.7|95|zombie,psych|David Freyne|A cure for the zombie virus works, but the cured remember everything.
+Cam|2018|5.9|94|psych,scifi|Daniel Goldhaber|A camgirl finds her channel taken over by a copy of herself.
+Climax|2018|6.9|97|psych|Gaspar Noé|A dance troupe's sangria is spiked with LSD. One long night.
+Overlord|2018|6.6|110|zombie,scifi|Julius Avery|D-Day paratroopers find a Nazi lab making undead super-soldiers.
+Upgrade|2018|7.5|100|scifi,body|Leigh Whannell|A paralyzed man gets an AI implant that can fight for him.
+The Perfection|2018|6.1|90|body,psych|Richard Shepard|Two cellists, a trip through China, and a very long game.
+Tumbbad|2018|8.2|104|folk,creature|Rahi Anil Barve|A man plunders a cursed temple to a forgotten god of gold.
+One Cut of the Dead|2017|7.6|96|zombie,comedy,found|Shinichiro Ueda|A low-budget zombie shoot is attacked by real zombies. Keep rolling.
+Cold Skin|2017|6.1|108|creature,cosmic|Xavier Gens|A weather observer on an Antarctic island is besieged nightly by amphibious creatures.
+Impetigore|2019|6.3|106|folk,supernatural|Joko Anwar|A woman returns to her birth village in Java to claim an inheritance. The village has other plans.
+Satan's Slaves|2017|6.4|107|supernatural,witch|Joko Anwar|After a mother's death, her children learn she promised them to something.
+The Platform|2019|7.0|94|scifi,survival|Galder Gaztelu-Urrutia|A vertical prison where food descends one floor at a time.
+Come to Daddy|2019|6.2|96|psych,comedy|Ant Timpson|A man visits his estranged father at a remote cabin. The father isn't pleased.
+In Fabric|2018|6.1|118|supernatural,comedy|Peter Strickland|A cursed red dress passes from owner to owner.
+Daniel Isn't Real|2019|6.1|100|psych,possession|Adam Egypt Mortimer|A troubled student's imaginary childhood friend comes back as an adult.
+The Lodge|2019|6.1|108|psych|Veronika Franz, Severin Fiala|A soon-to-be stepmother is snowed in with two kids who know her cult past.
+Sea Fever|2019|5.7|95|creature,scifi|Neasa Hardiman|An Irish trawler is infected by a parasite from the deep.
+The Vigil|2019|5.8|89|supernatural,possession|Keith Thomas|A lapsed Orthodox Jew sits overnight with a corpse that has a demon attached.
+Scare Me|2020|5.8|104|comedy,psych|Josh Ruben|Two strangers in a cabin during a blackout tell each other scary stories.
+The Mortuary Collection|2019|6.3|108|supernatural,comedy|Ryan Spindell|A mortician tells a job applicant the stories of the bodies.
+The Dark and the Wicked|2020|6.1|95|possession,supernatural|Bryan Bertino|Siblings return to the family farm as their father dies. Something wants the rest of them.
+Anything for Jackson|2020|6.0|97|possession,witch|Justin G. Dyck|An elderly couple kidnaps a pregnant woman to put their dead grandson's soul in her baby.
+Censor|2021|6.0|84|psych|Prano Bailey-Bond|A 1980s British film censor sees her missing sister in a video nasty.
+The Empty Man|2020|6.2|137|cosmic,supernatural|David Prior|An ex-cop investigating a missing girl finds a cult and something that thinks through people.
+Caveat|2020|5.8|88|haunted,psych|Damian Mc Carthy|A man with memory loss is paid to watch a woman in an island house. Chained to the basement.
+Come True|2020|5.7|105|scifi,psych|Anthony Scott Burns|A runaway teen joins a sleep study, and the shadow figures in her dreams are in the data.
+The Medium|2021|6.2|131|found,possession,folk|Banjong Pisanthanakun|A documentary crew follows a Thai shaman whose niece is possessed by something else.
+Werewolves Within|2021|6.1|97|creature,comedy|Josh Ruben|A snowed-in Vermont town, a new forest ranger, and a werewolf among them.
+Antlers|2021|5.9|99|creature,folk|Scott Cooper|A teacher in Oregon suspects her student is hiding a wendigo at home.
+Last Night in Soho|2021|7.0|116|supernatural,psych|Edgar Wright|A fashion student dreams her way into 1960s Soho and a singer's murder.
+Old|2021|5.8|108|scifi,psych|M. Night Shyamalan|A beach that ages you a lifetime in a day.
+The Night|2020|5.7|105|haunted,psych|Kourosh Ahari|An Iranian couple checks into a Los Angeles hotel that won't let them leave with their secrets.
+Hellbender|2021|5.9|86|witch,folk|The Adams Family|A mother raises her daughter in the woods, hiding what they both are.
+Mad God|2021|6.7|83|cosmic,body|Phil Tippett|A stop-motion descent into a hell thirty years in the making.
+You Won't Be Alone|2022|6.4|108|witch,folk|Goran Stolevski|A witch in 19th-century Macedonia takes bodies to learn what it is to be human.
+Watcher|2022|6.2|91|psych,invasion|Chloe Okuno|An American in Bucharest is sure the man across the street is watching her.
+Nanny|2022|5.3|97|supernatural,folk|Nikyatu Jusu|A Senegalese nanny in New York is visited by Mami Wata and Anansi.
+Hatching|2022|6.2|91|body,creature|Hanna Bergholm|A gymnast hatches an egg and raises what comes out as her other self.
+Sissy|2022|6.0|102|slasher,comedy|Hannah Barlow, Kane Senes|A wellness influencer joins a bachelorette weekend with her childhood bully.
+Men|2022|6.0|100|folk,psych|Alex Garland|A widow rents an English country house where every man has the same face.
+Resurrection|2022|6.0|103|psych|Andrew Semans|A composed executive's past abuser reappears. He wants to talk about their baby.
+Piggy|2022|6.4|99|slasher,psych|Carlota Pereda|A bullied teen watches a stranger abduct her tormentors and says nothing.
+Infinity Pool|2023|6.0|117|scifi,psych|Brandon Cronenberg|A resort where the rich pay to be executed by proxy.
+Skinamarink|2022|4.8|100|haunted,psych|Kyle Edward Ball|Two children wake to find the doors and windows of their house gone.
+Enys Men|2022|5.4|91|folk,psych|Mark Jenkin|A wildlife volunteer on a Cornish island in 1973 and a flower that grows lichen.
+Beau Is Afraid|2023|6.6|179|psych,comedy|Ari Aster|An anxious man's trip to his mother's funeral becomes an odyssey.
+Huesera: The Bone Woman|2022|6.1|93|supernatural,body|Michelle Garza Cervera|A pregnant woman in Mexico City is visited by a figure that cracks its bones.
+When Evil Lurks|2023|6.7|99|possession,folk|Demián Rugna|Two brothers find a rotting man about to birth a demon, and break every rule.
+Birth/Rebirth|2023|6.1|98|body,scifi|Laura Moss|A pathologist and a nurse revive the nurse's dead daughter. Keeping her alive costs.
+Influencer|2022|6.2|92|psych|Kurtis David Harder|A travel influencer in Thailand meets a helpful stranger who wants her life.
+Sick|2022|6.0|83|slasher,invasion|John Hyams|Two friends quarantine at a lake house in April 2020. Someone followed them.
+The Outwaters|2022|5.0|110|found,cosmic|Robbie Banfitch|Four friends camping in the Mojave record something that takes them apart.
+Totally Killer|2023|6.3|106|slasher,comedy|Nahnatchka Khan|A teen time-travels to 1987 to stop the Sweet Sixteen Killer.
+Thanksgiving|2023|6.2|106|slasher|Eli Roth|A Black Friday riot in Plymouth leads to a killer in a pilgrim mask the next year.
+Oddity|2024|6.4|98|supernatural,haunted|Damian Mc Carthy|A blind medium brings a life-size wooden man to her murdered sister's house.
+Abigail|2024|6.4|109|vampire,comedy|Matt Bettinelli-Olpin, Tyler Gillett|Kidnappers hold a ballerina for ransom. She's a vampire.
+In a Violent Nature|2024|5.5|94|slasher|Chris Nash|A slasher film told entirely from behind the killer as he walks.
+Immaculate|2024|5.9|89|possession,witch|Michael Mohan|An American nun at an Italian convent becomes pregnant without explanation.
+The First Omen|2024|6.5|119|possession,supernatural|Arkasha Stevenson|A novice in 1971 Rome uncovers how the Antichrist gets born.
+MaXXXine|2024|6.1|104|slasher|Ti West|Maxine makes it to 1985 Hollywood as the Night Stalker prowls.
+A Quiet Place: Day One|2024|6.5|99|creature,survival|Michael Sarnoski|The first day of the invasion, in Manhattan, with a cat.
+Alien: Romulus|2024|7.1|119|scifi,creature|Fede Álvarez|Young scavengers board a derelict station between the first two films.
+Strange Darling|2023|7.0|96|slasher,psych|JT Mollner|A one-night stand becomes a hunt, told in six chapters out of order.
+Cuckoo|2024|5.8|102|creature,scifi|Tilman Singer|A teen at a Bavarian resort hears a shriek that makes time skip.
+Heretic|2024|7.0|111|psych|Scott Beck, Bryan Woods|Two Mormon missionaries knock on Hugh Grant's door.
+Smile 2|2024|6.7|127|supernatural|Parker Finn|A pop star on the eve of a world tour inherits the curse.
+Terrifier 3|2024|6.1|125|slasher|Damien Leone|Art the Clown does Christmas.
+Speak No Evil|2024|6.6|110|psych,invasion|James Watkins|The American remake, with James McAvoy as the host who won't let you leave.
+The Monkey|2025|6.0|98|supernatural,comedy|Osgood Perkins|A wind-up toy monkey kills someone every time it drums.
+Presence|2024|6.1|85|haunted|Steven Soderbergh|A haunted-house story shot from the ghost's point of view.
+Companion|2025|7.0|97|scifi,psych|Drew Hancock|A weekend at a lake house with a girlfriend who turns out to be a product.
+Bring Her Back|2025|7.1|104|possession,witch|Danny & Michael Philippou|Two foster kids and a grieving foster mother with a ritual in the shed.
+Together|2025|6.6|102|body|Michael Shanks|A couple moves to the country and their bodies start refusing to separate.
+The Ugly Stepsister|2025|6.8|110|body|Emilie Blichfeldt|Cinderella from the stepsister's side, with every beauty procedure 1800s medicine could offer.
+Dangerous Animals|2025|6.1|98|creature,psych|Sean Byrne|A surfer is kidnapped by a shark-obsessed serial killer on his boat.
+Clown in a Cornfield|2025|6.0|96|slasher|Eli Craig|A town's mascot clown starts killing the teenagers of Kettle Springs.
+Opus|2025|5.3|104|psych|Mark Anthony Green|A young writer is invited to a reclusive pop star's compound for a comeback listening party.
+Drop|2025|6.3|95|psych|Christopher Landon|A first date, a series of anonymous phone drops, and a demand to kill him.
+Wolf Man|2025|5.4|103|creature,body|Leigh Whannell|A family trapped in a farmhouse as the father turns.`;
+const FILMS = RAW.trim().split("\n").map((line, i) => {
+  const [title, year, rating, runtime, tags, director, logline] = line.split("|");
+  return { id: i, title, year: +year, rating: +rating, runtime: +runtime, tags: tags.split(","), director, logline };
+});
+const SHELVES = [
+  { ch:"a", name:"SLASHER", code:"SLASH", tags:["slasher"],                  col:"#c8202c", col2:"#7a0f16" },
+  { ch:"b", name:"SUPERNATURAL", code:"SPIRIT", tags:["supernatural","possession"],col:"#7a4fd8", col2:"#3f2578" },
+  { ch:"c", name:"HAUNTED HOUSE", code:"HAUNT", tags:["haunted"],                  col:"#4f8fd8", col2:"#243f6e" },
+  { ch:"d", name:"FOLK & OCCULT", code:"OCCULT", tags:["folk","witch"],             col:"#8aa437", col2:"#465520" },
+  { ch:"e", name:"BODY HORROR", code:"BODY", tags:["body"],                     col:"#e0557a", col2:"#7a2240" },
+  { ch:"f", name:"CREATURES", code:"BEAST", tags:["creature"],                 col:"#3fa86a", col2:"#1e5636" },
+  { ch:"g", name:"ZOMBIES", code:"UNDEAD", tags:["zombie"],                   col:"#6fb33a", col2:"#36621a" },
+  { ch:"h", name:"VAMPIRES", code:"FANGS", tags:["vampire"],                  col:"#9c1f3a", col2:"#4d0f1d" },
+  { ch:"i", name:"PSYCHOLOGICAL", code:"PSYCH", tags:["psych"],                    col:"#d8a63f", col2:"#7a5c1c" },
+  { ch:"j", name:"SCI-FI & COSMIC", code:"COSMIC", tags:["scifi","cosmic"],           col:"#38e0ff", col2:"#1a6e80" },
+  { ch:"k", name:"FOUND FOOTAGE", code:"TAPES", tags:["found"],                    col:"#b7b7b7", col2:"#5a5a5a" },
+  { ch:"l", name:"HORROR COMEDY", code:"LAUGHS", tags:["comedy"],                   col:"#ff8c2a", col2:"#8a4610" },
+];
+SHELVES.forEach(s => { s.films = FILMS.filter(f => s.tags.some(t => f.tags.includes(t))); });
+const shelfByCh = Object.fromEntries(SHELVES.map(s => [s.ch, s]));
+const rnd = a => a[Math.floor(Math.random() * a.length)];
+
+// =============== CANVAS ===============
+const W = 320, H = 240, T = 16, COLS = 20, ROWS = 14;
+const cv = document.getElementById("game"), ctx = cv.getContext("2d");
+ctx.imageSmoothingEnabled = false;
+const FONT = '8px "Press Start 2P", monospace';
+const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x | 0, y | 0, w, h); };
+function makeCanvas(w, h) { const c = document.createElement("canvas"); c.width = w; c.height = h; const x = c.getContext("2d"); x.imageSmoothingEnabled = false; return [c, x]; }
+function sprite(rows, pal) {
+  const h = rows.length, w = rows[0].length; const [c, x] = makeCanvas(w, h);
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) { const k = rows[j][i]; if (k !== "." && pal[k]) { x.fillStyle = pal[k]; x.fillRect(i, j, 1, 1); } }
+  return c;
+}
+function flipH(c) { const [f, x] = makeCanvas(c.width, c.height); x.translate(c.width, 0); x.scale(-1, 1); x.drawImage(c, 0, 0); return f; }
+
+// =============== SPRITES ===============
+const PPAL = { h:"#2a1b22", s:"#e8c3a0", c:"#4a3b5c", k:"#2f2440", b:"#1b1418", e:"#12101a", w:"#c9b7a2", j:"#2b3a5c", m:"#b06a6a" };
+const P_DOWN = [
+"....hhhh....","...hhhhhh...","...hhhhhh...","...hsssshh..","...hsesesh..","...hssssh...","....smms....","....ssss....",
+"...ccwwcc...","..cccwwccc..","..cccwwccc..","..cccwwccc..",".sccccccccs.","..cccccccc..","...kkkkkk...",
+"...jj..jj...","...jj..jj...","...jj..jj...","...bb..bb...","..bbb..bbb.."];
+const P_UP = [
+"....hhhh....","...hhhhhh...","...hhhhhh...","...hhhhhh...","...hhhhhh...","...hhhhhh...","....hhhh....","....ssss....",
+"...cccccc...","..cccccccc..","..cccccccc..","..cccccccc..",".scccccccc s".replace(" ","s"),"..cccccccc..","...kkkkkk...",
+"...jj..jj...","...jj..jj...","...jj..jj...","...bb..bb...","..bbb..bbb.."];
+const P_SIDE = [
+"....hhhh....","...hhhhhh...","...hhhhhhs..","...hhhssss..","...hhsess...","....hssss...",".....sss....","......ss....",
+".....cccc...","....ccccc...","....cccccs..","....ccccc...","....ccccc...","....ccccc...","....kkkkk...",
+".....jjj....",".....jjj....",".....jjj....",".....bbb....","....bbbb...."];
+const legsDown = [["...jj..jj...","...jj..jj...","...jj..jj...","...bb..bb...","..bbb..bbb.."],
+                  ["...jj..jj...","...jj..jj...","...bb..jj...","..bbb..jj...","........bbb."],
+                  ["...jj..jj...","...jj..jj...","...jj..bb...","...jj..bbb..",".bbb........"]];
+const legsSide = [[".....jjj....",".....jjj....",".....jjj....",".....bbb....","....bbbb...."],
+                  ["....jj.jj...","...jj...jj..","...jj...jj..","...bb...bb..","..bbb...bbb."],
+                  [".....jjj....",".....jjj....",".....jjj....",".....bbb....","....bbbb...."]];
+function withLegs(base, legs) { return base.slice(0, 15).concat(legs); }
+const PLAYER = {
+  down: legsDown.map(l => sprite(withLegs(P_DOWN, l), PPAL)),
+  up: legsDown.map(l => sprite(withLegs(P_UP, l), PPAL)),
+  right: legsSide.map(l => sprite(withLegs(P_SIDE, l), PPAL)),
+};
+PLAYER.left = PLAYER.right.map(flipH);
+
+const CPAL = { h:"#6b4a2e", s:"#d9b48f", c:"#2f6b4f", k:"#1d4232", b:"#1b1418", e:"#12101a", w:"#e9e1d2", j:"#3a3a3a", m:"#a86464", q:"#c8202c" };
+const CLERK = sprite([
+"....qqqq....","...qqqqqq...","..qqqqqqqq..","...hsssshh..","...hsesesh..","...hssssh...","....smms....","....ssss....",
+"...cwwwwc...","..ccwwwwcc..","..ccwwwwcc..","..ccwwwwcc..",".scccccccc s".replace(" ","s"),"..cccccccc..","...kkkkkk..."], CPAL);
+const CAT = [sprite(["..........","..b....b..","..bbbbbb..","..bybbyb..","..bbbbbb..","b.bbbbbb..","bbbbbbbb..","..b..b...."], { b:"#0e0c12", y:"#f2d13a" }),
+             sprite(["..........","..b....b..","..bbbbbb..","..bybbyb..","..bbbbbb..","..bbbbbb.b","..bbbbbbb.","..b..b...."], { b:"#0e0c12", y:"#f2d13a" })];
+const TAPE = sprite(["wwwwwwww","wkkkkkkw","wkooookw","wkkkkkkw","wwwwwwww"], { w:"#2b2430", k:"#111", o:"#c8c0b0" });
+
+// =============== STORE MAP ===============
+const MAP = [
+"WWWWWWWWWWWWWWWWWWWW",
+"WKKKKKKTTTNNNNNNNNNW",
+"WCCCCCC............W",
+"W..................W",
+"W.aaa..bbb..ccc....W",
+"W..................W",
+"W.ddd..eee..fff..P.W",
+"W..................W",
+"W.ggg..hhh..iii....W",
+"W..................W",
+"W.jjj..kkk..lll..B.W",
+"W..................W",
+"W.....~..........mmW",
+"WWWWWWWWWDDWWWWWWWWW"];
+const tileAt = (x, y) => (y < 0 || y >= ROWS || x < 0 || x >= COLS) ? "W" : MAP[y][x];
+const walkable = ch => ".~m".includes(ch) || ch === "D";
+
+// pre-render static background (floor, walls, counter, posters)
+const [BG, bg] = makeCanvas(W, H);
+(function drawBG() {
+  for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
+    const ch = MAP[y][x], X = x * T, Y = y * T;
+    // floor everywhere first
+    const dark = (x + y) % 2 === 0;
+    bg.fillStyle = dark ? "#1b1620" : "#211a27"; bg.fillRect(X, Y, T, T);
+    bg.fillStyle = "rgba(0,0,0,.25)"; bg.fillRect(X, Y, T, 1); bg.fillRect(X, Y, 1, T);
+    if ((x * 7 + y * 13) % 11 === 0) { bg.fillStyle = "#17121b"; bg.fillRect(X + 4, Y + 6, 7, 5); }
+    if (ch === "W") {
+      if (y === 0 || y === ROWS - 1) {
+        bg.fillStyle = "#2b3a33"; bg.fillRect(X, Y, T, T);
+        for (let i = 0; i < 4; i++) { bg.fillStyle = i % 2 ? "#243129" : "#2f4038"; bg.fillRect(X, Y + i * 4, T, 4); bg.fillStyle = "rgba(0,0,0,.35)"; bg.fillRect(X, Y + i * 4 + 3, T, 1); }
+        if (y === 0) { bg.fillStyle = "#5a4a3a"; bg.fillRect(X, Y + 13, T, 3); bg.fillStyle = "#3a2e22"; bg.fillRect(X, Y + 15, T, 1); }
+        else { bg.fillStyle = "#5a4a3a"; bg.fillRect(X, Y, T, 3); }
+      } else {
+        bg.fillStyle = "#283530"; bg.fillRect(X, Y, T, T);
+        for (let i = 0; i < 4; i++) { bg.fillStyle = i % 2 ? "#233029" : "#2e3d36"; bg.fillRect(X + i * 4, Y, 4, T); }
+        bg.fillStyle = "#5a4a3a"; bg.fillRect(x === 0 ? X + 13 : X, Y, 3, T);
+      }
+    }
+    if (ch === "C" || ch === "K") {
+      if (ch === "K") { bg.fillStyle = "#1a1520"; bg.fillRect(X, Y, T, T); }
+      if (ch === "C") {
+        bg.fillStyle = "#6b4a2e"; bg.fillRect(X, Y - 4, T, 8); bg.fillStyle = "#8a6238"; bg.fillRect(X, Y - 4, T, 2);
+        bg.fillStyle = "#3f2a18"; bg.fillRect(X, Y + 4, T, 12); bg.fillStyle = "#54391f"; bg.fillRect(X + 2, Y + 6, 12, 8);
+        bg.fillStyle = "#2a1b10"; bg.fillRect(X, Y + 14, T, 2);
+      }
+    }
+    if (ch === "N") {
+      bg.fillStyle = "#3a2a1c"; bg.fillRect(X, Y, T, T); bg.fillStyle = "#15100f"; bg.fillRect(X + 1, Y + 2, 14, 5); bg.fillRect(X + 1, Y + 9, 14, 5);
+      const cols = ["#c8202c", "#7a4fd8", "#4f8fd8", "#8aa437", "#d8a63f", "#38e0ff", "#e0557a", "#3fa86a"];
+      for (let row = 0; row < 2; row++) for (let i = 0; i < 5; i++) { if ((x * 3 + i + row * 7) % 6 === 0) continue; bg.fillStyle = cols[(x * 5 + i * 3 + row) % cols.length]; bg.fillRect(X + 1 + i * 3, Y + 2 + row * 7, 2, 5); }
+      bg.fillStyle = "#6b4a2e"; bg.fillRect(X, Y + 7, T, 2); bg.fillRect(X, Y + 14, T, 2);
+    }
+    if (ch === "D") { bg.fillStyle = "#101014"; bg.fillRect(X, Y, T, T); bg.fillStyle = "#2a3a55"; bg.fillRect(X + 2, Y + 2, 12, 10); bg.fillStyle = "#4a6a95"; bg.fillRect(X + 3, Y + 3, 4, 3); bg.fillStyle = "#6b4a2e"; bg.fillRect(X, Y + 12, T, 4); }
+    if (ch === "m") { bg.fillStyle = "#4a2a2a"; bg.fillRect(X, Y + 2, T, 12); bg.fillStyle = "#6a3a3a"; bg.fillRect(X + 2, Y + 4, T - 4, 8); }
+    if (ch === "~") { bg.fillStyle = "#1f2a3a"; bg.fillRect(X + 3, Y + 5, 10, 7); bg.fillStyle = "#2c3d55"; bg.fillRect(X + 5, Y + 6, 5, 2); }
+  }
+  // posters on back wall
+  const posters = [[16, "#7a1f2a", "#e9e1d2"], [17, "#1f3a7a", "#f2d13a"], [18, "#3a2a1f", "#c8202c"]];
+  posters.forEach(([x, a, b]) => { bg.fillStyle = a; bg.fillRect(x * T + 2, 2, 12, 11); bg.fillStyle = b; bg.fillRect(x * T + 4, 4, 8, 3); bg.fillRect(x * T + 4, 9, 5, 2); bg.fillStyle = "#e9e1d2"; bg.fillRect(x * T + 7, 1, 2, 1); });
+  // torn "BE KIND REWIND" strip
+  bg.fillStyle = "#e9e1d2"; bg.fillRect(4 * T, 3, 5 * T, 7); bg.fillStyle = "#c8202c"; for (let i = 0; i < 9; i++) bg.fillRect(4 * T + 3 + i * 8, 5, 5, 3);
+  bg.fillStyle = "#2b3a33"; bg.fillRect(4 * T + 30, 3, 3, 4);
+  // register on counter
+  bg.fillStyle = "#4a4a52"; bg.fillRect(4 * T + 3, 2 * T - 10, 10, 8); bg.fillStyle = "#38e0ff"; bg.fillRect(4 * T + 5, 2 * T - 8, 6, 2); bg.fillStyle = "#2a2a30"; bg.fillRect(4 * T + 4, 2 * T - 4, 8, 2);
+  // return slot sign
+  bg.fillStyle = "#1d1524"; bg.fillRect(1 * T + 2, 2 * T - 2, 12, 6); bg.fillStyle = "#ff4fd8"; bg.fillRect(1 * T + 4, 2 * T, 8, 2);
+})();
+
+// shelf tile canvases per genre (16 wide x 22 tall, 6px overhang)
+function shelfTile(s, variant) {
+  const [c, x] = makeCanvas(16, 22);
+  x.fillStyle = "#4a3320"; x.fillRect(0, 0, 16, 22); x.fillStyle = "#6b4a2e"; x.fillRect(0, 0, 16, 2); x.fillStyle = "#2a1b10"; x.fillRect(0, 20, 16, 2);
+  x.fillStyle = "#15100f"; x.fillRect(1, 3, 14, 7); x.fillRect(1, 12, 14, 7);
+  let seed = s.ch.charCodeAt(0) * 31 + variant * 17;
+  const r = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  for (let row = 0; row < 2; row++) {
+    let cx = 1;
+    while (cx < 14) { const w = 2 + (r() < .3 ? 1 : 0); if (r() < .12) { cx += w; continue; }
+      x.fillStyle = r() < .5 ? s.col : s.col2; x.fillRect(cx, 3 + row * 9, w, 7);
+      x.fillStyle = "rgba(255,255,255,.35)"; x.fillRect(cx, 4 + row * 9, 1, 2);
+      x.fillStyle = "rgba(0,0,0,.4)"; x.fillRect(cx, 8 + row * 9, w, 1); cx += w; }
+  }
+  if (variant === 1) { x.fillStyle = "#e9e1d2"; x.fillRect(4, 0, 8, 3); x.fillStyle = s.col; x.fillRect(5, 1, 6, 1); }
+  return c;
+}
+SHELVES.forEach(s => { s.tiles = [0, 1, 2].map(v => shelfTile(s, v)); });
+const PLANT = sprite(["....gg....","..gg..gg..","...gggg...","..g.gg.g..","....gg....","...pppp...","...pppp...","..pppppp.."], { g:"#4a5a2e", p:"#7a4a2e" });
+const BIN = sprite(["..mmmmmm..",".m......m.",".mmmmmmmm.",".m.m..m.m.",".m.m..m.m.",".m.m..m.m.",".m.m..m.m.",".mmmmmmmm."], { m:"#5a5f66" });
+
+// =============== STATE ===============
+const state = { scene: "intro", t: 0, sound: true };
+const player = { x: 9, y: 11, px: 9 * T, py: 11 * T, dir: "up", moving: false, prog: 0, frame: 0, step: 0 };
+const cat = { x: 15, y: 7, px: 15 * T, py: 7 * T, dir: 1, moving: false, prog: 0, wait: 60, frame: 0 };
+let bag = []; let choiceOfDay = rnd(FILMS); let lastKept = null;
+let dialog = null; // {pages:[{text, choices?, onChoice?}], i, shown, done}
+let intro = { t: 0, px: -20, phase: 0, doorOpen: 0, lightning: 0, flash: 0 };
+let fade = 0, fadeDir = 0, onFadeDone = null;
+let flicker = { light: 1, neon: 1, sign: [1,1,1,1,1,1,1,1,1,1,1,1,1,1] };
+let toast = null; // {text, t}
+
+// =============== INPUT ===============
+const keys = {}; const pressed = [];
+const KEYMAP = { ArrowUp:"up", ArrowDown:"down", ArrowLeft:"left", ArrowRight:"right", w:"up", s:"down", a:"left", d:"right", W:"up", S:"down", A:"left", D:"right",
+  z:"a", Z:"a", Enter:"a", " ":"a", x:"b", X:"b", Escape:"b", Backspace:"b" };
+addEventListener("keydown", e => { if (e.key === "m" || e.key === "M") { state.sound = !state.sound; showToast(state.sound ? "SOUND ON" : "SOUND OFF"); return; }
+  const k = KEYMAP[e.key]; if (!k) return; e.preventDefault(); if (!keys[k]) pressed.push(k); keys[k] = true; });
+addEventListener("keyup", e => { const k = KEYMAP[e.key]; if (k) keys[k] = false; });
+document.querySelectorAll("[data-k]").forEach(b => {
+  const k = b.dataset.k;
+  const down = e => { e.preventDefault(); if (!keys[k]) pressed.push(k); keys[k] = true; b.classList.add("down"); unlockAudio(); };
+  const up = e => { e.preventDefault(); keys[k] = false; b.classList.remove("down"); };
+  b.addEventListener("pointerdown", down); b.addEventListener("pointerup", up); b.addEventListener("pointercancel", up); b.addEventListener("pointerleave", up);
+});
+addEventListener("blur", () => { for (const k in keys) keys[k] = false; });
+const takePress = k => { const i = pressed.indexOf(k); if (i >= 0) { pressed.splice(i, 1); return true; } return false; };
+
+// =============== AUDIO ===============
+let actx = null;
+function unlockAudio() { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === "suspended") actx.resume(); } catch {} }
+addEventListener("keydown", unlockAudio, { once: false });
+function tone(f, dur, type = "square", vol = .05, slide = 0) {
+  if (!state.sound || !actx) return;
+  try { const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain(); o.type = type; o.frequency.setValueAtTime(f, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(20, f + slide), t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur); o.connect(g).connect(actx.destination); o.start(t); o.stop(t + dur + .02); } catch {}
+}
+const sfx = {
+  blip: () => tone(880, .06), bump: () => tone(110, .08, "square", .03), pick: () => { tone(660, .08); setTimeout(() => tone(990, .12), 70); },
+  cancel: () => tone(330, .08, "square", .04, -120), reveal: () => { tone(523, .1, "triangle", .06); setTimeout(() => tone(659, .1, "triangle", .06), 100); setTimeout(() => tone(784, .2, "triangle", .06), 200); },
+  sting: () => { tone(740, 1.2, "sawtooth", .05, -500); tone(784, 1.2, "sawtooth", .04, -520); tone(60, .5, "sine", .3, -30); },
+  thunder: () => { if (!state.sound || !actx) return; try { const t = actx.currentTime, n = actx.createBufferSource(), buf = actx.createBuffer(1, actx.sampleRate * 1.5, actx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2); n.buffer = buf; const f = actx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 220; const g = actx.createGain(); g.gain.value = .35; n.connect(f).connect(g).connect(actx.destination); n.start(t); } catch {} },
+  door: () => { tone(220, .15, "triangle", .05, 60); setTimeout(() => tone(1760, .05, "square", .03), 120); setTimeout(() => tone(2093, .08, "square", .03), 200); },
+};
+
+// =============== TEXT ===============
+function wrap(text, maxChars) {
+  const out = []; text.split("\n").forEach(par => { let line = ""; par.split(" ").forEach(w => { if ((line + " " + w).trim().length > maxChars) { out.push(line.trim()); line = w; } else line += " " + w; }); out.push(line.trim()); });
+  return out;
+}
+function text(s, x, y, c = "#e9e1d2") { ctx.font = FONT; ctx.textBaseline = "top"; ctx.fillStyle = c; ctx.fillText(s, x, y); }
+function say(pages, after) { dialog = { pages: Array.isArray(pages) ? pages : [pages], i: 0, shown: 0, sel: 0, after }; state.scene = "dialog"; }
+function showToast(t) { toast = { text: t, t: 90 }; }
+
+// =============== INTRO SCENE ===============
+const rain = Array.from({ length: 140 }, () => ({ x: Math.random() * W, y: Math.random() * H, s: 4 + Math.random() * 4 }));
+function drawSign(x, y, size, letters, dead) {
+  ctx.font = `${size}px "Press Start 2P", monospace`; ctx.textBaseline = "top";
+  let cx = x;
+  for (let i = 0; i < letters.length; i++) {
+    const ch = letters[i]; const on = flicker.sign[i % flicker.sign.length] > .5 && !dead.includes(i);
+    if (ch !== " ") {
+      if (on) { ctx.shadowColor = "#ff4fd8"; ctx.shadowBlur = 8; ctx.fillStyle = "#ffd6f5"; ctx.fillText(ch, cx, y); ctx.shadowBlur = 0; ctx.fillStyle = "#ff4fd8"; ctx.fillText(ch, cx, y); }
+      else { ctx.fillStyle = "#4a1a3f"; ctx.fillText(ch, cx, y); }
+    }
+    cx += size;
+  }
+  ctx.shadowBlur = 0;
+}
+function drawIntro() {
+  const it = intro.t;
+  // sky
+  const grd = ctx.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, "#07060c"); grd.addColorStop(1, "#15121d"); ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
+  if (intro.flash > 0) { ctx.fillStyle = `rgba(200,210,255,${intro.flash * .5})`; ctx.fillRect(0, 0, W, H); }
+  // far buildings
+  px(0, 60, 60, 110, "#0d0b12"); px(260, 50, 60, 120, "#0d0b12"); px(20, 80, 6, 6, "#3a3350"); px(285, 70, 6, 6, "#3a3350"); px(300, 95, 6, 6, "#2a2540");
+  // storefront
+  px(50, 40, 220, 140, "#3a2a2a"); // brick
+  for (let y = 40; y < 180; y += 6) for (let x = 50; x < 270; x += 12) { px(x + ((y / 6) % 2) * 6, y, 11, 5, (x * y) % 7 === 0 ? "#4a3434" : "#432f2f"); }
+  // awning
+  px(60, 92, 200, 10, "#5a1c24"); for (let i = 0; i < 10; i++) px(60 + i * 20, 92, 10, 10, "#7a2630"); px(60, 102, 200, 2, "#2a0e12"); px(150, 100, 6, 6, "#0c0a10");
+  // window
+  px(66, 108, 110, 62, "#0e0c14"); const glow = .5 + .5 * Math.sin(it / 20) * .2 + flicker.light * .3; px(70, 112, 102, 54, `rgba(60,40,70,${glow})`);
+  px(72, 114, 98, 50, "rgba(120,60,140,.15)");
+  // posters in window
+  [[76, 118, "#7a1f2a"], [104, 118, "#1f3a7a"], [132, 118, "#3a5a1f"]].forEach(([x, y, c]) => { px(x, y, 22, 30, c); px(x + 3, y + 4, 16, 6, "#e9e1d2"); px(x + 3, y + 14, 10, 3, "#e9e1d2"); px(x + 3, y + 20, 14, 3, "#f2d13a"); });
+  px(72, 150, 98, 14, "rgba(255,255,255,.06)");
+  // OPEN sign in window
+  const openOn = flicker.neon > .4; ctx.font = '8px "Press Start 2P", monospace'; ctx.textBaseline = "top";
+  if (openOn) { ctx.shadowColor = "#38e0ff"; ctx.shadowBlur = 6; ctx.fillStyle = "#bff6ff"; ctx.fillText("OPEN", 136, 152); ctx.shadowBlur = 0; } else { ctx.fillStyle = "#1a3a44"; ctx.fillText("OPEN", 136, 152); }
+  // door
+  const dx = 196, dy = 110; px(dx - 2, dy - 2, 40, 72, "#2a1b10"); px(dx, dy, 36, 70, "#1a1420");
+  const open = intro.doorOpen; if (open > 0) { px(dx + 2, dy + 2, 32, 66, "#3a2a3a"); px(dx + 2, dy + 2, 32 * (1 - open) , 66, "#1a1420"); }
+  if (open < .5) { px(dx + 4, dy + 6, 28, 30, "#2a3a55"); px(dx + 6, dy + 8, 8, 6, "#4a6a95"); px(dx + 28, dy + 40, 4, 4, "#c8b08a"); px(dx + 8, dy + 44, 20, 10, "#e9e1d2"); px(dx + 10, dy + 47, 16, 2, "#c8202c"); }
+  // sign above
+  px(56, 54, 208, 30, "#120e16"); px(56, 54, 208, 2, "#3a3040"); px(56, 82, 208, 2, "#000"); px(62, 86, 3, 6, "#3a3040"); px(255, 86, 3, 6, "#3a3040");
+  drawSign(64, 61, 14, "MIDNIGHT VIDEO", [5]);
+  // sidewalk + street
+  px(0, 180, W, 24, "#2a2830"); px(0, 180, W, 2, "#3f3c47"); for (let x = 0; x < W; x += 32) px(x, 182, 1, 22, "#1f1d24");
+  px(0, 204, W, 36, "#141318"); px(0, 212, W, 1, "#2a2830"); for (let x = 10; x < W; x += 40) px(x, 222, 20, 2, "#3a3a2a");
+  // puddle reflections
+  px(90, 190, 40, 6, "rgba(255,79,216,.12)"); px(200, 192, 30, 5, "rgba(56,224,255,.1)"); px(20, 194, 24, 4, "rgba(255,255,255,.05)");
+  // streetlight
+  px(20, 70, 3, 112, "#2a2830"); px(14, 66, 16, 5, "#3a3840"); const lampOn = Math.random() > .04; if (lampOn) { px(16, 71, 12, 3, "#f2d13a"); ctx.fillStyle = "rgba(242,209,58,.07)"; ctx.beginPath(); ctx.moveTo(22, 74); ctx.lineTo(-20, 190); ctx.lineTo(70, 190); ctx.fill(); }
+  // trash can & bag
+  px(236, 162, 14, 18, "#3a3f46"); px(235, 160, 16, 3, "#4a4f56"); px(252, 170, 12, 10, "#1e1e24");
+  // player walking
+  const f = intro.phase === 0 ? Math.floor(it / 7) % 3 : 0;
+  const spr = intro.phase <= 1 ? PLAYER.right[f] : PLAYER.up[0];
+  if (intro.phase < 3) ctx.drawImage(spr, intro.px | 0, 164 - (intro.phase === 2 ? 2 : 0));
+  // rain
+  ctx.fillStyle = "rgba(170,190,230,.35)"; for (const r of rain) { ctx.fillRect(r.x | 0, r.y | 0, 1, r.s); r.y += r.s * 1.6; r.x -= 1; if (r.y > H) { r.y = -10; r.x = Math.random() * (W + 40); } }
+  // caption
+  if (intro.phase === 0 && it > 30) { text("A to skip", 236, 226, "#4b4658"); }
+}
+function updateIntro() {
+  intro.t++; const it = intro.t;
+  if (Math.random() < .004 && intro.lightning <= 0) { intro.lightning = 1; intro.flash = 1; sfx.thunder(); }
+  if (intro.flash > 0) intro.flash -= .08; if (intro.lightning > 0) intro.lightning -= .02;
+  if (intro.phase === 0) { intro.px += .55; if (intro.px >= 208 || takePress("a")) { intro.px = 208; intro.phase = 1; intro.t = 0; } }
+  else if (intro.phase === 1) { if (it > 20) { intro.phase = 2; intro.t = 0; sfx.door(); } }
+  else if (intro.phase === 2) { intro.doorOpen = Math.min(1, it / 25); if (it > 40) { intro.phase = 3; intro.t = 0; } }
+  else if (intro.phase === 3) { if (it > 10) startFade(() => { state.scene = "loading"; intro.t = 0; }); }
+  takePress("a"); takePress("b");
+}
+function drawLoading() {
+  ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
+  const t = intro.t;
+  // tape
+  px(110, 90, 100, 60, "#2b2430"); px(114, 94, 92, 52, "#111"); px(118, 98, 84, 10, "#e9e1d2"); px(120, 100, 40, 6, "#c8202c");
+  const a = t / 6; [[140, 125], [180, 125]].forEach(([cx, cy]) => { ctx.fillStyle = "#3a3340"; ctx.beginPath(); ctx.arc(cx, cy, 12, 0, 7); ctx.fill(); ctx.fillStyle = "#c8c0b0"; for (let i = 0; i < 3; i++) { const ang = a + i * 2.09; ctx.fillRect(cx + Math.cos(ang) * 7 - 1, cy + Math.sin(ang) * 7 - 1, 3, 3); } });
+  text("NOW LOADING", 116, 165, "#e9e1d2"); const dots = ".".repeat(Math.floor(t / 15) % 4); text(dots, 204, 165, "#ff4fd8");
+  text("PLEASE BE KIND. REWIND.", 68, 190, "#4b4658");
+  // tracking bar
+  px(60, 210, 200, 6, "#1a1520"); px(60, 210, Math.min(200, t * 2.4), 6, "#38e0ff");
+  if (t > 90) startFade(() => { state.scene = "store"; player.x = 9; player.y = 11; player.px = 9 * T; player.py = 11 * T; player.dir = "up"; showToast("Welcome in. Watch the puddle."); });
+  intro.t++;
+}
+
+// =============== STORE SCENE ===============
+function startFade(cb) { if (fadeDir !== 0) return; fadeDir = 1; onFadeDone = cb; }
+function updateFade() { if (fadeDir === 1) { fade = Math.min(1, fade + .07); if (fade >= 1) { fadeDir = -1; if (onFadeDone) { const f = onFadeDone; onFadeDone = null; f(); } } }
+  else if (fadeDir === -1) { fade = Math.max(0, fade - .05); if (fade <= 0) fadeDir = 0; } }
+const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+function blocked(x, y) { if (!walkable(tileAt(x, y))) return true; if (cat.x === x && cat.y === y) return true; return false; }
+function updatePlayer() {
+  if (player.moving) {
+    player.prog += .14; const [dx, dy] = DIRS[player.dir];
+    player.px = (player.x - dx * (1 - Math.min(1, player.prog))) * T; player.py = (player.y - dy * (1 - Math.min(1, player.prog))) * T;
+    player.step += .25; player.frame = Math.floor(player.step) % 3;
+    if (player.prog >= 1) { player.moving = false; player.px = player.x * T; player.py = player.y * T; if (tileAt(player.x, player.y) === "D") onDoor(); }
+    return;
+  }
+  player.frame = 0;
+  const d = ["up", "down", "left", "right"].find(k => keys[k]);
+  if (d) {
+    player.dir = d; const [dx, dy] = DIRS[d]; const nx = player.x + dx, ny = player.y + dy;
+    if (!blocked(nx, ny)) { player.x = nx; player.y = ny; player.moving = true; player.prog = 0; }
+    else if (takePress(d)) sfx.bump();
+  }
+  if (takePress("a")) interact();
+  if (takePress("b")) { if (bag.length) say({ text: `You're carrying ${bag.length} tape${bag.length > 1 ? "s" : ""}. Bring them to the counter at the top of the store.` }); else say({ text: "Your bag is empty. Walk up to a shelf and press A to grab a random tape." }); }
+}
+function facingTile() { const [dx, dy] = DIRS[player.dir]; return { x: player.x + dx, y: player.y + dy, ch: tileAt(player.x + dx, player.y + dy) }; }
+function interact() {
+  const f = facingTile(); const sh = shelfByCh[f.ch];
+  if (cat.x === f.x && cat.y === f.y) { sfx.blip(); say({ text: rnd(["The cat stares through you.", "The cat is named Tracking. It does not come when called.", "The cat knocks nothing over, for now.", "It purrs like a VCR eating a tape."]) }); return; }
+  if (sh) { sfx.blip(); browseShelf(sh); return; }
+  if (f.ch === "C") { sfx.blip(); counter(); return; }
+  if (f.ch === "T") { sfx.blip(); say({ text: rnd(["Two TVs playing static. For a second, something in the snow looked back.", "The top TV is tuned to channel 3. The bottom one is tuned to nothing.", "A sticker on the TV says DO NOT ADJUST."]) }); return; }
+  if (f.ch === "P") { sfx.blip(); say({ text: "The plant died in 1987. Nobody has had the heart." }); return; }
+  if (f.ch === "B") { sfx.blip(); say({ text: "A trash can full of rewound-wrong tapes and one sock." }); return; }
+  if (f.ch === "N") { sfx.blip(); say({ text: rnd(["NEW RELEASES. Every tape on this wall is from 1988.", "A rack of returns nobody has reshelved. One of them is still warm.", "Staff picks. The staff is one guy and the cat."]) }); return; }
+  if (f.ch === "K") { sfx.blip(); say({ text: "The clerk raises an eyebrow. 'Counter's right here, pal.'" }); return; }
+  if (f.ch === "W" && f.y === 0) { sfx.blip(); say({ text: rnd(["A poster for a movie that may not exist: SLEEP TIGHT 3.", "BE KIND. REWIND. Someone has crossed out KIND.", "A wall of staff picks. Every pick is the same movie."]) }); return; }
+  if (f.ch === "D") { sfx.blip(); onDoor(true); return; }
+}
+function browseShelf(sh) {
+  if (bag.length >= 5) { say({ text: "Your arms are full. Five tapes is the limit. Take them to the counter." }); return; }
+  say({ text: `${sh.name} shelf. ${sh.films.length} tapes, labels worn off.\nGrab one blind?`, choices: ["Grab a tape", "Leave it"], onChoice: i => {
+    if (i === 0) { const film = rnd(sh.films); bag.push({ film, shelf: sh }); sfx.pick(); updateBagLine();
+      say({ text: `You pull a tape off the ${sh.name} shelf. ${rnd(["The label is torn off.", "It's warm. Why is it warm?", "The case rattles.", "Someone wrote STOP on the spine in marker.", "No label. Just a date: your birthday."])}\nBag: ${bag.length}/5.` }); }
+  } });
+}
+function onDoor(ask) {
+  if (!ask && player.dir !== "down") return;
+  say({ text: "Head back out into the rain?", choices: ["Stay", "Leave"], onChoice: i => { if (i === 1) startFade(() => { state.scene = "intro"; intro = { t: 0, px: -20, phase: 0, doorOpen: 0, lightning: 0, flash: 0 }; bag = []; updateBagLine(); }); } });
+}
+function filmLine(f) { return `${f.title} (${f.year})  ${f.rating.toFixed(1)}/10`; }
+function counter() {
+  choiceOfDay = rnd(FILMS);
+  if (!bag.length) {
+    say({ text: `The clerk looks up from a magazine.\n"Nothing? Tonight's Choice of the Day is...\n${filmLine(choiceOfDay)}.\nWant it?"`, choices: ["Take it", "Keep browsing"], onChoice: i => { if (i === 0) { sfx.reveal(); finish(choiceOfDay, "choice"); } } });
+    return;
+  }
+  const pages = [{ text: `The clerk dumps your bag on the counter.\n"Let's see what you've got."` }];
+  bag.forEach((b, i) => pages.push({ text: `Tape ${i + 1} of ${bag.length} (${b.shelf.name}):\n${filmLine(b.film)}`, onShow: () => sfx.reveal() }));
+  const allowed = rnd(bag);
+  pages.push({ text: `"House rules. One rental per customer, and I pick which."\nThe clerk slides one tape back to you...` });
+  pages.push({ text: `...${allowed.film.title} (${allowed.film.year}).\n"Or you can gamble on tonight's Choice of the Day. Any shelf, any rating. No peeking."`, onShow: () => sfx.sting() });
+  pages.push({ text: `What'll it be?`, choices: [`Keep ${allowed.film.title.slice(0, 22)}`, "Choice of the Day", "Put them all back"], onChoice: i => {
+    if (i === 0) finish(allowed.film, "kept");
+    else if (i === 1) { say({ text: `The clerk reaches under the counter and hands you an unmarked tape.\n"Tonight's Choice of the Day is...\n${filmLine(choiceOfDay)}."`, onShow: () => sfx.reveal() }, () => finish(choiceOfDay, "choice")); }
+    else { bag = []; updateBagLine(); say({ text: `"Suit yourself." The tapes go back on the cart.` }); }
+  } });
+  say(pages);
+}
+function finish(film, how) { bag = []; updateBagLine(); lastKept = film; showResult(film, how); }
+
+// cat wander
+function updateCat() {
+  if (cat.moving) { cat.prog += .08; const [dx, dy] = [[0,-1],[0,1],[-1,0],[1,0]][cat.dir]; cat.px = (cat.x - dx * (1 - Math.min(1, cat.prog))) * T; cat.py = (cat.y - dy * (1 - Math.min(1, cat.prog))) * T; cat.frame = Math.floor(state.t / 8) % 2;
+    if (cat.prog >= 1) { cat.moving = false; cat.px = cat.x * T; cat.py = cat.y * T; cat.wait = 40 + Math.random() * 120; } return; }
+  if (--cat.wait > 0) return;
+  const d = Math.floor(Math.random() * 4); const [dx, dy] = [[0,-1],[0,1],[-1,0],[1,0]][d]; const nx = cat.x + dx, ny = cat.y + dy;
+  if (walkable(tileAt(nx, ny)) && tileAt(nx, ny) !== "D" && !(player.x === nx && player.y === ny) && !(player.moving && player.x === nx && player.y === ny)) { cat.dir = d; cat.x = nx; cat.y = ny; cat.moving = true; cat.prog = 0; } else cat.wait = 30;
+}
+
+function drawStore() {
+  ctx.drawImage(BG, 0, 0);
+  // neon inside sign on back wall
+  ctx.font = '8px "Press Start 2P", monospace'; ctx.textBaseline = "top";
+  if (flicker.neon > .35) { ctx.shadowColor = "#c8202c"; ctx.shadowBlur = 6; ctx.fillStyle = "#ffb3b8"; ctx.fillText("HORROR", 12 * T + 2, 4); ctx.shadowBlur = 0; ctx.fillStyle = "#ff3b47"; ctx.fillText("HORROR", 12 * T + 2, 4); } else { ctx.fillStyle = "#3a1012"; ctx.fillText("HORROR", 12 * T + 2, 4); }
+  // TV static
+  [[7 * T, 1 * T], [8 * T, 1 * T], [9 * T, 1 * T]].forEach(([x, y], i) => { px(x + 1, y + 1, 14, 14, "#2a2a30"); px(x + 2, y + 2, 12, 9, "#111"); for (let j = 0; j < 30; j++) { const v = Math.random(); px(x + 2 + Math.random() * 12, y + 2 + Math.random() * 9, 1, 1, v > .5 ? "#cfcfd8" : "#5a5a66"); } if (i === 0 && Math.floor(state.t / 40) % 9 === 0) { px(x + 6, y + 4, 2, 2, "#c8202c"); px(x + 9, y + 4, 2, 2, "#c8202c"); } px(x + 3, y + 12, 10, 2, "#1a1a20"); });
+  // y-sorted entities
+  const ents = [];
+  for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) { const ch = MAP[y][x]; const sh = shelfByCh[ch];
+    if (sh) { const v = MAP[y][x - 1] === ch && MAP[y][x + 1] === ch ? 1 : (MAP[y][x - 1] === ch ? 2 : 0); ents.push({ y: y * T + 16, draw: () => ctx.drawImage(sh.tiles[v], x * T, y * T - 6) }); }
+    if (ch === "P") ents.push({ y: y * T + 16, draw: () => ctx.drawImage(PLANT, x * T + 3, y * T + 4) });
+    if (ch === "B") ents.push({ y: y * T + 16, draw: () => ctx.drawImage(BIN, x * T + 3, y * T + 5) });
+  }
+  ents.push({ y: 1 * T + 16, draw: () => ctx.drawImage(CLERK, 2 * T + 2, 1 * T - 6) });
+  ents.push({ y: cat.py + 16, draw: () => ctx.drawImage(CAT[cat.frame], cat.px + 3, cat.py + 6) });
+  ents.push({ y: player.py + 16, draw: () => { ctx.drawImage(PLAYER[player.dir][player.frame], player.px + 2, player.py - 6); if (bag.length) ctx.drawImage(TAPE, player.px + (player.dir === "left" ? 0 : 8), player.py + 2); } });
+  ents.sort((a, b) => a.y - b.y).forEach(e => e.draw());
+  // aisle signs hanging above each shelf group
+  ctx.font = '8px "Press Start 2P", monospace'; ctx.textBaseline = "top";
+  for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) { const sh = shelfByCh[MAP[y][x]]; if (!sh || MAP[y][x - 1] === sh.ch) continue;
+    const w = sh.code.length * 8 + 6, sx = x * T + 24 - w / 2, sy = y * T - 14;
+    px(sx, sy, w, 12, "#0a0a0c"); px(sx, sy, w, 1, sh.col); px(sx, sy + 11, w, 1, sh.col2);
+    ctx.fillStyle = sh.col; ctx.fillText(sh.code, sx + 3, sy + 2); }
+  // light flicker + vignette
+  if (flicker.light < 1) { ctx.fillStyle = `rgba(0,0,0,${(1 - flicker.light) * .6})`; ctx.fillRect(0, 0, W, H); }
+  const vg = ctx.createRadialGradient(W / 2, H / 2, 60, W / 2, H / 2, 220); vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,.55)"); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+  // HUD bar
+  px(0, 224, W, 16, "#0a0a0c"); px(0, 224, W, 1, "#2a2733");
+  const f = facingTile(); const sh = shelfByCh[f.ch];
+  let hint = sh ? `${sh.name}  [A] grab` : f.ch === "C" ? "COUNTER  [A] check out" : f.ch === "D" && player.dir === "down" ? "EXIT  [A] leave" : (cat.x === f.x && cat.y === f.y) ? "CAT  [A] pet" : "";
+  text(hint, 4, 228, sh ? sh.col : "#9a93a3");
+  for (let i = 0; i < 5; i++) { if (i < bag.length) ctx.drawImage(TAPE, 266 + i * 10, 229); else px(266 + i * 10, 229, 8, 5, "#1d1a24"); }
+  if (toast) { const w = toast.text.length * 8 + 12; px((W - w) / 2, 200, w, 16, "rgba(10,10,12,.9)"); text(toast.text, (W - w) / 2 + 6, 204, "#ff4fd8"); if (--toast.t <= 0) toast = null; }
+}
+
+// =============== DIALOG ===============
+function updateDialog() {
+  const pg = dialog.pages[dialog.i]; const lines = wrap(pg.text, 36); const total = lines.join("\n").length;
+  if (pg.onShow && !pg.shownOnce) { pg.shownOnce = true; pg.onShow(); }
+  if (dialog.shown < total) { dialog.shown += 2; if (takePress("a") || takePress("b")) dialog.shown = total; return; }
+  if (pg.choices) {
+    if (takePress("up")) { dialog.sel = (dialog.sel + pg.choices.length - 1) % pg.choices.length; sfx.blip(); }
+    if (takePress("down")) { dialog.sel = (dialog.sel + 1) % pg.choices.length; sfx.blip(); }
+    if (takePress("b")) { sfx.cancel(); const sel = pg.choices.length - 1; closeDialog(); if (pg.onChoice) pg.onChoice(sel); return; }
+    if (takePress("a")) { const sel = dialog.sel; sfx.blip(); closeDialog(); if (pg.onChoice) pg.onChoice(sel); return; }
+    return;
+  }
+  if (takePress("a") || takePress("b")) { sfx.blip(); dialog.i++; dialog.shown = 0; dialog.sel = 0; if (dialog.i >= dialog.pages.length) { const after = dialog.after; closeDialog(); if (after) after(); } }
+}
+function closeDialog() { dialog = null; if (state.scene === "dialog") state.scene = "store"; }
+function drawDialog() {
+  drawStore();
+  const pg = dialog.pages[dialog.i]; const lines = wrap(pg.text, 36);
+  const choiceH = pg.choices ? pg.choices.length * 12 + 6 : 0; const h = lines.length * 12 + 16 + choiceH; const y = 224 - h - 4;
+  px(4, y, W - 8, h, "#0a0a0c"); px(4, y, W - 8, 2, "#e9e1d2"); px(4, y + h - 2, W - 8, 2, "#e9e1d2"); px(4, y, 2, h, "#e9e1d2"); px(W - 6, y, 2, h, "#e9e1d2");
+  let shown = dialog.shown; lines.forEach((l, i) => { const s = l.slice(0, Math.max(0, shown)); shown -= l.length + 1; text(s, 12, y + 8 + i * 12); });
+  const full = dialog.shown >= lines.join("\n").length;
+  if (full && pg.choices) pg.choices.forEach((c, i) => { text(c, 24, y + 12 + lines.length * 12 + i * 12, i === dialog.sel ? "#ff4fd8" : "#9a93a3"); if (i === dialog.sel) text(">", 12, y + 12 + lines.length * 12 + i * 12, "#ff4fd8"); });
+  else if (full && Math.floor(state.t / 20) % 2 === 0) text("▼", W - 20, y + h - 12, "#ff4fd8");
+}
+
+// =============== RESULT OVERLAY ===============
+const resultEl = document.getElementById("result");
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function skulls(r) { const n = Math.max(1, Math.min(5, Math.round((r - 5) / 0.7))); return "☠".repeat(n) + "<span style='opacity:.25'>" + "☠".repeat(5 - n) + "</span>"; }
+function showResult(f, how) {
+  state.scene = "result";
+  const q = encodeURIComponent(`${f.title} ${f.year}`);
+  resultEl.innerHTML = `<div class="card">
+    <div class="label">${how === "choice" ? "CHOICE OF THE DAY" : "THE CLERK LET YOU KEEP"}</div>
+    <h2>${esc(f.title)}</h2>
+    <div class="meta"><b>${f.year}</b> &middot; <b>${f.runtime} min</b> &middot; dir. <b>${esc(f.director)}</b><br>IMDb <b>${f.rating.toFixed(1)}</b> <span class="skulls">${skulls(f.rating)}</span></div>
+    <p>${esc(f.logline)}</p>
+    <div class="tags">${f.tags.map(t => G[t] ? `<span class="tag">${G[t]}</span>` : "").join("")}</div>
+    <div class="acts">
+      <a class="pbtn primary" href="https://www.imdb.com/find/?q=${q}&s=tt&ttype=ft" target="_blank" rel="noopener">IMDb</a>
+      <a class="pbtn" href="https://www.justwatch.com/us/search?q=${encodeURIComponent(f.title)}" target="_blank" rel="noopener">Where to stream</a>
+      <button class="pbtn" type="button" id="againBtn">Back to the shelves [A]</button>
+    </div>
+    <div class="label" style="color:#9a93a3">Due back by dawn. Rewind it.</div>
+  </div>`;
+  resultEl.hidden = false;
+  document.getElementById("againBtn").addEventListener("click", hideResult);
+  document.getElementById("againBtn").focus();
+}
+function hideResult() { resultEl.hidden = true; state.scene = "store"; showToast("Choice of the Day re-rolled."); }
+function updateResult() { if (takePress("a") || takePress("b")) hideResult(); }
+function updateBagLine() { document.getElementById("bagLine").textContent = bag.length ? `BAG: ${bag.map(b => b.shelf.name.split(" ")[0]).join(", ")}` : "BAG: empty"; }
+
+// =============== LOOP ===============
+function updateFlicker() {
+  if (Math.random() < .02) flicker.light = .4 + Math.random() * .4; else flicker.light = Math.min(1, flicker.light + .1);
+  if (Math.random() < .03) flicker.neon = Math.random(); else flicker.neon = Math.min(1, flicker.neon + .08);
+  if (Math.random() < .08) { const i = Math.floor(Math.random() * 14); flicker.sign[i] = Math.random() < .5 ? 0 : 1; }
+  flicker.sign = flicker.sign.map(v => v < 1 && Math.random() < .3 ? 1 : v);
+}
+let last = 0;
+function loop(ts) {
+  requestAnimationFrame(loop);
+  if (ts - last < 1000 / 60) return; last = ts; state.t++;
+  updateFlicker(); updateFade();
+  if (state.scene === "intro") { updateIntro(); drawIntro(); }
+  else if (state.scene === "loading") { drawLoading(); }
+  else if (state.scene === "store") { if (fadeDir === 0) updatePlayer(); updateCat(); drawStore(); }
+  else if (state.scene === "dialog") { updateDialog(); updateCat(); if (dialog) drawDialog(); else drawStore(); }
+  else if (state.scene === "result") { updateResult(); drawStore(); }
+  if (fade > 0) { ctx.fillStyle = `rgba(0,0,0,${fade})`; ctx.fillRect(0, 0, W, H); }
+  pressed.length = 0;
+}
+updateBagLine();
+const start = () => requestAnimationFrame(loop);
+if (document.fonts && document.fonts.load) { Promise.race([document.fonts.load('8px "Press Start 2P"'), new Promise(r => setTimeout(r, 1500))]).then(start, start); } else start();
+})();
+</script>
+
+</body>
+</html>
